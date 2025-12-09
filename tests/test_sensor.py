@@ -1,7 +1,7 @@
 """Tests for sensor platform."""
 import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
 from homeassistant.core import HomeAssistant
 
@@ -30,10 +30,9 @@ class TestPowerStateSensor:
         
         sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
         
-        # Mock current time to be during ON period (00:00)
+        # Group 12 at 00:00 is ON
         with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
             mock_dt.now.return_value = datetime(2025, 12, 9, 0, 15)
-            # Group 12 at 00:00 is ON
             assert sensor.native_value == STATE_ON
     
     def test_native_value_off(self, sample_schedule_data, mock_config_entry):
@@ -63,7 +62,9 @@ class TestPowerStateSensor:
         
         sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
         
-        with patch.object(sensor, 'native_value', STATE_ON):
+        # Test icon based on actual state
+        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
+            mock_dt.now.return_value = datetime(2025, 12, 9, 0, 15)
             assert sensor.icon == "mdi:transmission-tower"
     
     def test_icon_off(self, sample_schedule_data, mock_config_entry):
@@ -73,7 +74,9 @@ class TestPowerStateSensor:
         
         sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
         
-        with patch.object(sensor, 'native_value', STATE_OFF):
+        # Test icon based on actual state
+        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
+            mock_dt.now.return_value = datetime(2025, 12, 9, 1, 15)
             assert sensor.icon == "mdi:transmission-tower-off"
     
     def test_icon_maybe(self, sample_schedule_data, mock_config_entry):
@@ -83,7 +86,9 @@ class TestPowerStateSensor:
         
         sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
         
-        with patch.object(sensor, 'native_value', STATE_MAYBE):
+        # Test icon based on actual state at MAYBE time
+        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
+            mock_dt.now.return_value = datetime(2025, 12, 9, 5, 15)
             assert sensor.icon == "mdi:transmission-tower-import"
     
     def test_extra_state_attributes(self, sample_schedule_data, mock_config_entry):
@@ -201,4 +206,3 @@ class TestScheduleSensor:
         
         # Schedule should have 48 entries
         assert len(attrs["schedule"]) == 48
-

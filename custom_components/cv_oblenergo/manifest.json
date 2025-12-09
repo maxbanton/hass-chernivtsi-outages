@@ -4,9 +4,9 @@
   "codeowners": [],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/your-repo/ha-cv-oblenergo",
+  "documentation": "https://github.com/maxbanton/ha-cv-power-outages",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/your-repo/ha-cv-oblenergo/issues",
+  "issue_tracker": "https://github.com/maxbanton/ha-cv-power-outages/issues",
   "requirements": [],
   "version": "1.0.0"
 }

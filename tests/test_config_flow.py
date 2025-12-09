@@ -4,7 +4,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.data_entry_flow import FlowResultType, AbortFlow
 
 from custom_components.cv_oblenergo.const import DOMAIN, CONF_GROUP
 from custom_components.cv_oblenergo.config_flow import PowerScheduleConfigFlow
@@ -79,14 +79,14 @@ class TestConfigFlow:
         flow.hass = MagicMock()
         flow.async_set_unique_id = AsyncMock()
         flow._abort_if_unique_id_configured = MagicMock(
-            side_effect=config_entries.ConfigFlowError("already_configured")
+            side_effect=AbortFlow("already_configured")
         )
         
         with patch(
             "custom_components.cv_oblenergo.config_flow.validate_connection",
             return_value=True
         ):
-            with pytest.raises(config_entries.ConfigFlowError):
+            with pytest.raises(AbortFlow):
                 await flow.async_step_user(user_input={CONF_GROUP: 12})
     
     @pytest.mark.asyncio
@@ -158,4 +158,3 @@ async def test_validate_connection_failure():
         ):
             result = await validate_connection(hass)
             assert result is False
-

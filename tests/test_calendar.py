@@ -28,7 +28,7 @@ class TestPowerScheduleCalendar:
         
         calendar = PowerScheduleCalendar(coordinator, 12, mock_config_entry)
         
-        assert calendar.unique_id == "test_entry_id_group_12_calendar"
+        assert calendar.unique_id == "test_entry_id_calendar"
     
     def test_name(self, sample_schedule_data, mock_config_entry):
         """Test calendar name."""
@@ -37,7 +37,7 @@ class TestPowerScheduleCalendar:
         
         calendar = PowerScheduleCalendar(coordinator, 12, mock_config_entry)
         
-        assert calendar.name == "Outage Schedule"
+        assert calendar.name == "Outages"
     
     def test_device_info(self, sample_schedule_data, mock_config_entry):
         """Test device info."""
@@ -49,6 +49,8 @@ class TestPowerScheduleCalendar:
         device_info = calendar.device_info
         assert device_info is not None
         assert "identifiers" in device_info
+        assert device_info["name"] == "CV"
+        assert device_info["model"] == "Group 12"
     
     @pytest.mark.asyncio
     async def test_async_get_events_no_data(self, mock_config_entry):
@@ -120,4 +122,3 @@ class TestPowerScheduleCalendar:
         if len(events) > 1:
             for i in range(len(events) - 1):
                 assert events[i].start <= events[i + 1].start
-

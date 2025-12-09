@@ -1,6 +1,6 @@
 # Графік відключень електроенергії Чернівецької області
 
-[![CI](https://github.com/your-repo/ha-cv-oblenergo/actions/workflows/ci.yml/badge.svg)](https://github.com/your-repo/ha-cv-oblenergo/actions/workflows/ci.yml)
+[![CI](https://github.com/maxbanton/ha-cv-power-outages/actions/workflows/ci.yml/badge.svg)](https://github.com/maxbanton/ha-cv-power-outages/actions/workflows/ci.yml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
 > ⚠️ **НЕОФІЦІЙНА ІНТЕГРАЦІЯ** - Це громадський проект, який НЕ пов'язаний з енергетичною компанією. Використовуйте на власний ризик.

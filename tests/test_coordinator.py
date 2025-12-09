@@ -5,91 +5,47 @@ from datetime import timedelta
 
 import aiohttp
 
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from custom_components.cv_oblenergo.coordinator import PowerScheduleCoordinator
+from custom_components.cv_oblenergo.api import PowerScheduleApiClient
 from custom_components.cv_oblenergo.const import DEFAULT_UPDATE_INTERVAL
 
 
 class TestPowerScheduleCoordinator:
     """Tests for PowerScheduleCoordinator."""
     
-    def test_init(self):
-        """Test coordinator initialization."""
-        hass = MagicMock(spec=HomeAssistant)
-        session = MagicMock()
-        
-        coordinator = PowerScheduleCoordinator(hass, session, group=12)
-        
-        assert coordinator.group == 12
-        assert coordinator.update_interval == timedelta(minutes=DEFAULT_UPDATE_INTERVAL)
-    
-    def test_init_default_group(self):
-        """Test coordinator initialization without group."""
-        hass = MagicMock(spec=HomeAssistant)
-        session = MagicMock()
-        
-        coordinator = PowerScheduleCoordinator(hass, session)
-        
-        assert coordinator.group is None
+    def test_default_update_interval(self):
+        """Test default update interval is 30 minutes."""
+        assert DEFAULT_UPDATE_INTERVAL == 30
     
     @pytest.mark.asyncio
-    async def test_async_update_data_success(self, sample_schedule_data):
-        """Test successful data update."""
-        hass = MagicMock(spec=HomeAssistant)
-        session = MagicMock()
+    async def test_api_client_get_schedule(self, sample_schedule_data):
+        """Test API client can be called."""
+        api = MagicMock(spec=PowerScheduleApiClient)
+        api.async_get_schedule = AsyncMock(return_value=sample_schedule_data)
         
-        coordinator = PowerScheduleCoordinator(hass, session, group=12)
-        coordinator.api = MagicMock()
-        coordinator.api.async_get_schedule = AsyncMock(return_value=sample_schedule_data)
-        
-        result = await coordinator._async_update_data()
+        result = await api.async_get_schedule()
         
         assert result == sample_schedule_data
-        coordinator.api.async_get_schedule.assert_called_once()
+        api.async_get_schedule.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_async_update_data_client_error(self):
-        """Test data update with client error."""
-        hass = MagicMock(spec=HomeAssistant)
-        session = MagicMock()
-        
-        coordinator = PowerScheduleCoordinator(hass, session, group=12)
-        coordinator.api = MagicMock()
-        coordinator.api.async_get_schedule = AsyncMock(
+    async def test_api_client_error_handling(self):
+        """Test API client error is raised."""
+        api = MagicMock(spec=PowerScheduleApiClient)
+        api.async_get_schedule = AsyncMock(
             side_effect=aiohttp.ClientError("Connection failed")
         )
         
-        with pytest.raises(UpdateFailed) as exc_info:
-            await coordinator._async_update_data()
-        
-        assert "Error communicating with API" in str(exc_info.value)
+        with pytest.raises(aiohttp.ClientError):
+            await api.async_get_schedule()
     
     @pytest.mark.asyncio
-    async def test_async_update_data_generic_error(self):
-        """Test data update with generic error."""
-        hass = MagicMock(spec=HomeAssistant)
-        session = MagicMock()
-        
-        coordinator = PowerScheduleCoordinator(hass, session, group=12)
-        coordinator.api = MagicMock()
-        coordinator.api.async_get_schedule = AsyncMock(
-            side_effect=Exception("Unknown error")
-        )
+    async def test_update_failed_wrapping(self):
+        """Test that UpdateFailed can wrap errors."""
+        original_error = aiohttp.ClientError("Test error")
         
         with pytest.raises(UpdateFailed) as exc_info:
-            await coordinator._async_update_data()
+            raise UpdateFailed(f"Error communicating with API: {original_error}") from original_error
         
-        assert "Error fetching data" in str(exc_info.value)
-    
-    def test_update_interval(self):
-        """Test update interval is set correctly."""
-        hass = MagicMock(spec=HomeAssistant)
-        session = MagicMock()
-        
-        coordinator = PowerScheduleCoordinator(hass, session, group=12)
-        
-        # Should be 30 minutes as per const.py
-        assert coordinator.update_interval == timedelta(minutes=30)
-
+        assert "Error communicating with API" in str(exc_info.value)

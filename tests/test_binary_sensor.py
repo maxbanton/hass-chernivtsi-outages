@@ -1,7 +1,7 @@
 """Tests for binary sensor platform."""
 import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, PropertyMock
 
 from custom_components.cv_oblenergo.const import (
     DOMAIN,
@@ -22,7 +22,7 @@ class TestPowerConnectivitySensor:
         
         sensor = PowerConnectivitySensor(coordinator, 12, mock_config_entry)
         
-        # Group 12 at 00:00 is ON
+        # Group 12 at 00:00 is ON based on fixture
         with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
             mock_dt.now.return_value = datetime(2025, 12, 9, 0, 15)
             assert sensor.is_on is True
@@ -74,7 +74,9 @@ class TestPowerConnectivitySensor:
         
         sensor = PowerConnectivitySensor(coordinator, 12, mock_config_entry)
         
-        with patch.object(sensor, 'is_on', True):
+        # Test when is_on returns True
+        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
+            mock_dt.now.return_value = datetime(2025, 12, 9, 0, 15)
             assert sensor.icon == "mdi:power-plug"
     
     def test_icon_off(self, sample_schedule_data, mock_config_entry):
@@ -84,7 +86,9 @@ class TestPowerConnectivitySensor:
         
         sensor = PowerConnectivitySensor(coordinator, 12, mock_config_entry)
         
-        with patch.object(sensor, 'is_on', False):
+        # Test when is_on returns False
+        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
+            mock_dt.now.return_value = datetime(2025, 12, 9, 1, 15)
             assert sensor.icon == "mdi:power-plug-off"
     
     def test_extra_state_attributes(self, sample_schedule_data, mock_config_entry):
@@ -106,7 +110,7 @@ class TestPowerConnectivitySensor:
         
         sensor = PowerConnectivitySensor(coordinator, 12, mock_config_entry)
         
-        assert sensor.unique_id == "test_entry_id_group_12_power"
+        assert sensor.unique_id == "test_entry_id_power"
     
     def test_device_info(self, sample_schedule_data, mock_config_entry):
         """Test device info."""
@@ -119,5 +123,5 @@ class TestPowerConnectivitySensor:
         assert device_info is not None
         assert "identifiers" in device_info
         assert "name" in device_info
-        assert "Electricity Group 12" in device_info["name"]
-
+        assert device_info["name"] == "CV"
+        assert device_info["model"] == "Group 12"
