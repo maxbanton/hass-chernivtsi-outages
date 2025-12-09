@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Chernivtsi Power Schedule",
+        "description": "Set up electricity outage schedule for Chernivtsi region.\n\nThis is an unofficial integration. Find your group number at {url}",
+        "data": {
+          "group": "Your Group Number (1-12)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to schedule source"
+    },
+    "abort": {
+      "already_configured": "This group is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "power_state": {
+        "name": "Power State",
+        "state": {
+          "on": "Electricity ON",
+          "off": "Electricity OFF",
+          "maybe": "Possibly ON"
+        }
+      }
+    }
+  }
+}
+

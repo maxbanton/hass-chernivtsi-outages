@@ -1,0 +1,8 @@
+{
+  "name": "Chernivtsi Power Schedule",
+  "render_readme": true,
+  "domains": ["sensor", "binary_sensor", "calendar"],
+  "iot_class": "cloud_polling",
+  "homeassistant": "2024.1.0"
+}
+
