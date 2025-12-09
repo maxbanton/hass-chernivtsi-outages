@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class PowerScheduleCoordinator(DataUpdateCoordinator[ScheduleData]):
     """Class to manage fetching power schedule data."""
-    
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -32,7 +32,7 @@ class PowerScheduleCoordinator(DataUpdateCoordinator[ScheduleData]):
         )
         self.api = PowerScheduleApiClient(session)
         self.group = group
-    
+
     async def _async_update_data(self) -> ScheduleData:
         """Fetch data from API."""
         try:
@@ -41,4 +41,3 @@ class PowerScheduleCoordinator(DataUpdateCoordinator[ScheduleData]):
             raise UpdateFailed(f"Error communicating with API: {err}") from err
         except Exception as err:
             raise UpdateFailed(f"Error fetching data: {err}") from err
-

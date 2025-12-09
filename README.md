@@ -3,18 +3,18 @@
 [![CI](https://github.com/maxbanton/ha-cv-power-outages/actions/workflows/ci.yml/badge.svg)](https://github.com/maxbanton/ha-cv-power-outages/actions/workflows/ci.yml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
-> ⚠️ **НЕОФІЦІЙНА ІНТЕГРАЦІЯ** - Це громадський проект, який НЕ пов'язаний з енергетичною компанією. Використовуйте на власний ризик.
+> **НЕОФІЦІЙНА ІНТЕГРАЦІЯ** - Це громадський проект, який НЕ пов'язаний з енергетичною компанією. Використовуйте на власний ризик.
 
 Інтеграція для Home Assistant, яка показує графік відключень електроенергії для Чернівецької області. Дані отримуються з публічно доступної інформації.
 
 ## Можливості
 
-- 📊 **Актуальний графік** - Отримує поточний денний графік відключень
-- ⚡ **Сенсор стану** - Показує чи є зараз світло: ON, OFF або MAYBE
-- 🔌 **Бінарний сенсор** - Простий індикатор увімк/вимк для автоматизацій
-- 📅 **Календар** - Перегляд періодів відключень у календарі Home Assistant
-- ⏰ **Час наступної зміни** - Коли буде наступна зміна стану
-- 📈 **Залишок годин** - Скільки годин ON/OFF залишилось сьогодні
+- **Актуальний графік** - Отримує поточний денний графік відключень
+- **Сенсор стану** - Показує чи є зараз світло: ON, OFF або MAYBE
+- **Бінарний сенсор** - Простий індикатор увімк/вимк для автоматизацій
+- **Календар** - Перегляд періодів відключень у календарі Home Assistant
+- **Час наступної зміни** - Коли буде наступна зміна стану
+- **Залишок годин** - Скільки годин ON/OFF залишилось сьогодні
 
 ## Встановлення
 
@@ -73,7 +73,7 @@
 | `off` | Немає світла (в) |
 | `maybe` | Можливо є світло (мз) |
 
-## ⚠️ Застереження
+## Застереження
 
 **ЦЕ НЕОФІЦІЙНА ІНТЕГРАЦІЯ.**
 
@@ -88,18 +88,18 @@
 
 [English version]
 
-> ⚠️ **UNOFFICIAL INTEGRATION** - This is a community project and is NOT affiliated with any electricity company. Use at your own risk.
+> **UNOFFICIAL INTEGRATION** - This is a community project and is NOT affiliated with any electricity company. Use at your own risk.
 
 Home Assistant integration for power outage schedule in Chernivtsi region (Чернівецька область), Ukraine.
 
 ## Features
 
-- 📊 **Real-time schedule data** - Fetches the current day's power schedule
-- ⚡ **Power state sensors** - Shows if electricity is currently ON, OFF, or MAYBE
-- 🔌 **Binary sensors** - Simple on/off indicator for automations
-- 📅 **Calendar integration** - View outage periods in Home Assistant calendar
-- ⏰ **Next change time** - Know when the next power state change will occur
-- 📈 **Remaining hours** - See how many ON/OFF hours are left today
+- **Real-time schedule data** - Fetches the current day's power schedule
+- **Power state sensors** - Shows if electricity is currently ON, OFF, or MAYBE
+- **Binary sensors** - Simple on/off indicator for automations
+- **Calendar integration** - View outage periods in Home Assistant calendar
+- **Next change time** - Know when the next power state change will occur
+- **Remaining hours** - See how many ON/OFF hours are left today
 
 ## Installation
 
@@ -159,7 +159,7 @@ pip install -r requirements_test.txt
 pytest tests/ -v
 ```
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 **THIS IS AN UNOFFICIAL INTEGRATION.**
 

@@ -18,7 +18,7 @@ STATE_MAYBE = "maybe"  # мз - можливо заживлені (possibly powe
 # State translations for UI
 STATE_TRANSLATIONS = {
     STATE_ON: "Electricity ON",
-    STATE_OFF: "Electricity OFF", 
+    STATE_OFF: "Electricity OFF",
     STATE_MAYBE: "Possibly ON",
 }
 
@@ -31,8 +31,8 @@ STATE_TRANSLATIONS_UA = {
 # HTML tag to state mapping
 TAG_TO_STATE = {
     "u": STATE_ON,    # <u>з</u> - powered
-    "o": STATE_OFF,   # <o>в</o> - disconnected
-    "s": STATE_MAYBE, # <s>мз</s> - maybe powered
+    "o": STATE_OFF,  # <o>в</o> - disconnected
+    "s": STATE_MAYBE,  # <s>мз</s> - maybe powered
 }
 
 # Number of groups
@@ -52,4 +52,3 @@ DEFAULT_UPDATE_INTERVAL = 30
 
 # Attribution
 ATTRIBUTION = "Data from oblenergo.cv.ua (unofficial)"
-
