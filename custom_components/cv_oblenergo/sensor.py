@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
@@ -118,12 +119,18 @@ class PowerStateSensor(PowerScheduleBaseSensor):
         on_slots = sum(1 for s in schedule.slots if s.state != STATE_OFF)
         off_slots = sum(1 for s in schedule.slots if s.state == STATE_OFF)
 
-        return {
+        attrs = {
             "schedule_date": schedule.date.isoformat(),
             "group": self._group,
             "hours_with_power": on_slots * 0.5,
             "hours_without_power": off_slots * 0.5,
         }
+
+        # Add last_updated from coordinator data for debugging
+        if self.coordinator.data and self.coordinator.data.last_updated:
+            attrs["last_updated"] = self.coordinator.data.last_updated.isoformat()
+
+        return attrs
 
 
 class NextOnSensor(PowerScheduleBaseSensor):
@@ -151,7 +158,7 @@ class NextOnSensor(PowerScheduleBaseSensor):
             # Get next slot that is not OFF (on or maybe = on)
             next_on = schedule.get_next_on_or_maybe()
             if next_on:
-                now = datetime.now()
+                now = dt_util.now()
                 return now.replace(
                     hour=next_on.hour,
                     minute=next_on.minute,
@@ -185,7 +192,7 @@ class NextOffSensor(PowerScheduleBaseSensor):
         if schedule:
             next_off = schedule.get_next_off()
             if next_off:
-                now = datetime.now()
+                now = dt_util.now()
                 return now.replace(
                     hour=next_off.hour,
                     minute=next_off.minute,
