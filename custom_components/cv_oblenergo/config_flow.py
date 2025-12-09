@@ -50,17 +50,15 @@ class PowerScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # Create unique ID and title based on selected group
                 await self.async_set_unique_id(f"cv_oblenergo_group_{group}")
                 self._abort_if_unique_id_configured()
-                title = f"Electricity Group {group}"
+                title = f"CV Power (Group {group})"
 
                 return self.async_create_entry(
                     title=title,
                     data={CONF_GROUP: group},
                 )
 
-        # Build group selection list (1-12 only, no "all groups" option)
-        group_options = {}
-        for i in range(1, NUM_GROUPS + 1):
-            group_options[i] = f"Group {i} (Група {i})"
+        # Build group selection list (1-12)
+        group_options = {i: str(i) for i in range(1, NUM_GROUPS + 1)}
 
         return self.async_show_form(
             step_id="user",

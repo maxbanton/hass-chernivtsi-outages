@@ -121,7 +121,6 @@ class PowerStateSensor(PowerScheduleBaseSensor):
 
         attrs = {
             "schedule_date": schedule.date.isoformat(),
-            "group": self._group,
             "hours_with_power": on_slots * 0.5,
             "hours_without_power": off_slots * 0.5,
         }
