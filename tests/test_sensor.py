@@ -1,208 +1,208 @@
 """Tests for sensor platform."""
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from homeassistant.core import HomeAssistant
+import pytest
 
-from custom_components.cv_oblenergo.const import (
-    DOMAIN,
-    STATE_ON,
-    STATE_OFF,
-    STATE_MAYBE,
-)
 from custom_components.cv_oblenergo.sensor import (
     PowerStateSensor,
-    NextChangeSensor,
-    OffHoursRemainingSensor,
-    OnHoursRemainingSensor,
-    ScheduleSensor,
+    NextOnSensor,
+    NextOffSensor,
 )
+from custom_components.cv_oblenergo.api import GroupSchedule, TimeSlot
+from custom_components.cv_oblenergo.const import STATE_ON, STATE_OFF, STATE_MAYBE
+
+
+@pytest.fixture
+def mock_coordinator():
+    """Create a mock coordinator."""
+    coordinator = MagicMock()
+    coordinator.data = None
+    return coordinator
+
+
+@pytest.fixture
+def mock_entry():
+    """Create a mock config entry."""
+    entry = MagicMock()
+    entry.entry_id = "test_entry_id"
+    entry.data = {"group": 12}
+    return entry
+
+
+@pytest.fixture
+def sample_schedule():
+    """Create a sample schedule for testing."""
+    slots = []
+    for i in range(48):
+        hour = i // 2
+        minute = 30 if i % 2 else 0
+        # Pattern: OFF 0-6, ON 6-12, OFF 12-18, ON 18-24
+        if hour < 6:
+            state = STATE_OFF
+        elif hour < 12:
+            state = STATE_ON
+        elif hour < 18:
+            state = STATE_OFF
+        else:
+            state = STATE_ON
+        slots.append(TimeSlot(hour=hour, minute=minute, state=state))
+    return GroupSchedule(group=12, date=datetime.now().date(), slots=slots)
+
+
+@pytest.fixture
+def schedule_with_maybe():
+    """Create a schedule with maybe state."""
+    slots = []
+    for i in range(48):
+        hour = i // 2
+        minute = 30 if i % 2 else 0
+        if hour < 6:
+            state = STATE_OFF
+        elif hour < 8:
+            state = STATE_MAYBE  # Maybe from 6-8
+        elif hour < 12:
+            state = STATE_ON
+        elif hour < 18:
+            state = STATE_OFF
+        else:
+            state = STATE_ON
+        slots.append(TimeSlot(hour=hour, minute=minute, state=state))
+    return GroupSchedule(group=12, date=datetime.now().date(), slots=slots)
 
 
 class TestPowerStateSensor:
     """Tests for PowerStateSensor."""
-    
-    def test_native_value_on(self, sample_schedule_data, mock_config_entry):
-        """Test native value when power is ON."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
-        
-        # Group 12 at 00:00 is ON
-        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
-            mock_dt.now.return_value = datetime(2025, 12, 9, 0, 15)
-            assert sensor.native_value == STATE_ON
-    
-    def test_native_value_off(self, sample_schedule_data, mock_config_entry):
-        """Test native value when power is OFF."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
-        
-        # Group 12 at 01:00 (slot 2) is OFF
-        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
-            mock_dt.now.return_value = datetime(2025, 12, 9, 1, 15)
-            assert sensor.native_value == STATE_OFF
-    
-    def test_native_value_no_data(self, mock_config_entry):
+
+    def test_native_value_on(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test native value when power is on."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
+
+        with patch.object(sample_schedule, 'get_current_state', return_value=STATE_ON):
+            assert sensor.native_value == "on"
+
+    def test_native_value_off(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test native value when power is off."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
+
+        with patch.object(sample_schedule, 'get_current_state', return_value=STATE_OFF):
+            assert sensor.native_value == "off"
+
+    def test_native_value_maybe_treated_as_on(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test that maybe state is treated as on."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
+
+        with patch.object(sample_schedule, 'get_current_state', return_value=STATE_MAYBE):
+            assert sensor.native_value == "on"
+
+    def test_native_value_no_data(self, mock_coordinator, mock_entry):
         """Test native value when no data available."""
-        coordinator = MagicMock()
-        coordinator.data = None
-        
-        sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
+        mock_coordinator.data = None
+
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
         assert sensor.native_value is None
-    
-    def test_icon_on(self, sample_schedule_data, mock_config_entry):
-        """Test icon when power is ON."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
-        
-        # Test icon based on actual state
-        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
-            mock_dt.now.return_value = datetime(2025, 12, 9, 0, 15)
-            assert sensor.icon == "mdi:transmission-tower"
-    
-    def test_icon_off(self, sample_schedule_data, mock_config_entry):
-        """Test icon when power is OFF."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
-        
-        # Test icon based on actual state
-        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
-            mock_dt.now.return_value = datetime(2025, 12, 9, 1, 15)
-            assert sensor.icon == "mdi:transmission-tower-off"
-    
-    def test_icon_maybe(self, sample_schedule_data, mock_config_entry):
-        """Test icon when power is MAYBE."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
-        
-        # Test icon based on actual state at MAYBE time
-        with patch('custom_components.cv_oblenergo.api.datetime') as mock_dt:
-            mock_dt.now.return_value = datetime(2025, 12, 9, 5, 15)
-            assert sensor.icon == "mdi:transmission-tower-import"
-    
-    def test_extra_state_attributes(self, sample_schedule_data, mock_config_entry):
-        """Test extra state attributes."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = PowerStateSensor(coordinator, 12, mock_config_entry)
-        
-        attrs = sensor.extra_state_attributes
-        assert "group" in attrs
-        assert attrs["group"] == 12
-        assert "schedule_date" in attrs
+
+    def test_icon_on(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test icon when power is on."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
+
+        with patch.object(sample_schedule, 'get_current_state', return_value=STATE_ON):
+            assert sensor.icon == "mdi:flash"
+
+    def test_icon_off(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test icon when power is off."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
+
+        with patch.object(sample_schedule, 'get_current_state', return_value=STATE_OFF):
+            assert sensor.icon == "mdi:flash-off"
+
+    def test_unique_id(self, mock_coordinator, mock_entry):
+        """Test unique_id format."""
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
+        assert sensor.unique_id == "test_entry_id_state"
+
+    def test_device_info(self, mock_coordinator, mock_entry):
+        """Test device_info."""
+        sensor = PowerStateSensor(mock_coordinator, 12, mock_entry)
+        assert "CV Power" in sensor.device_info["name"]
 
 
-class TestNextChangeSensor:
-    """Tests for NextChangeSensor."""
-    
-    def test_native_value(self, sample_schedule_data, mock_config_entry):
-        """Test native value returns datetime."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = NextChangeSensor(coordinator, 12, mock_config_entry)
-        
-        value = sensor.native_value
-        # Should return a datetime or None
-        assert value is None or isinstance(value, datetime)
-    
-    def test_extra_state_attributes(self, sample_schedule_data, mock_config_entry):
-        """Test extra state attributes include next state info."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = NextChangeSensor(coordinator, 12, mock_config_entry)
-        
-        attrs = sensor.extra_state_attributes
-        assert "group" in attrs
-        assert attrs["group"] == 12
+class TestNextOnSensor:
+    """Tests for NextOnSensor."""
+
+    def test_native_value(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test native value returns next ON time."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = NextOnSensor(mock_coordinator, 12, mock_entry)
+
+        next_on_slot = TimeSlot(hour=6, minute=0, state=STATE_ON)
+        with patch.object(sample_schedule, 'get_next_on_or_maybe', return_value=next_on_slot):
+            value = sensor.native_value
+            assert value is not None
+            assert value.hour == 6
+            assert value.minute == 0
+
+    def test_native_value_no_next_on(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test native value when no next ON."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = NextOnSensor(mock_coordinator, 12, mock_entry)
+
+        with patch.object(sample_schedule, 'get_next_on_or_maybe', return_value=None):
+            assert sensor.native_value is None
+
+    def test_unique_id(self, mock_coordinator, mock_entry):
+        """Test unique_id format."""
+        sensor = NextOnSensor(mock_coordinator, 12, mock_entry)
+        assert sensor.unique_id == "test_entry_id_next_on"
 
 
-class TestOffHoursRemainingSensor:
-    """Tests for OffHoursRemainingSensor."""
-    
-    def test_native_value(self, sample_schedule_data, mock_config_entry):
-        """Test native value returns hours."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = OffHoursRemainingSensor(coordinator, 12, mock_config_entry)
-        
-        value = sensor.native_value
-        assert value is None or isinstance(value, (int, float))
-    
-    def test_unit_of_measurement(self, sample_schedule_data, mock_config_entry):
-        """Test unit of measurement is hours."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = OffHoursRemainingSensor(coordinator, 12, mock_config_entry)
-        
-        assert sensor.native_unit_of_measurement == "h"
+class TestNextOffSensor:
+    """Tests for NextOffSensor."""
 
+    def test_native_value(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test native value returns next OFF time."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
 
-class TestOnHoursRemainingSensor:
-    """Tests for OnHoursRemainingSensor."""
-    
-    def test_native_value(self, sample_schedule_data, mock_config_entry):
-        """Test native value returns hours."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = OnHoursRemainingSensor(coordinator, 12, mock_config_entry)
-        
-        value = sensor.native_value
-        assert value is None or isinstance(value, (int, float))
-    
-    def test_unit_of_measurement(self, sample_schedule_data, mock_config_entry):
-        """Test unit of measurement is hours."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = OnHoursRemainingSensor(coordinator, 12, mock_config_entry)
-        
-        assert sensor.native_unit_of_measurement == "h"
+        sensor = NextOffSensor(mock_coordinator, 12, mock_entry)
 
+        next_off_slot = TimeSlot(hour=12, minute=0, state=STATE_OFF)
+        with patch.object(sample_schedule, 'get_next_off', return_value=next_off_slot):
+            value = sensor.native_value
+            assert value is not None
+            assert value.hour == 12
+            assert value.minute == 0
 
-class TestScheduleSensor:
-    """Tests for ScheduleSensor."""
-    
-    def test_native_value(self, sample_schedule_data, mock_config_entry):
-        """Test native value returns date string."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = ScheduleSensor(coordinator, 12, mock_config_entry)
-        
-        value = sensor.native_value
-        assert value == "2025-12-09"
-    
-    def test_extra_state_attributes(self, sample_schedule_data, mock_config_entry):
-        """Test extra state attributes include full schedule."""
-        coordinator = MagicMock()
-        coordinator.data = sample_schedule_data
-        
-        sensor = ScheduleSensor(coordinator, 12, mock_config_entry)
-        
-        attrs = sensor.extra_state_attributes
-        assert "group" in attrs
-        assert "schedule" in attrs
-        assert "off_periods" in attrs
-        assert "on_periods" in attrs
-        assert "total_off_hours" in attrs
-        assert "total_on_hours" in attrs
-        
-        # Schedule should have 48 entries
-        assert len(attrs["schedule"]) == 48
+    def test_native_value_no_next_off(self, mock_coordinator, mock_entry, sample_schedule):
+        """Test native value when no next OFF."""
+        mock_coordinator.data = MagicMock()
+        mock_coordinator.data.get_group.return_value = sample_schedule
+
+        sensor = NextOffSensor(mock_coordinator, 12, mock_entry)
+
+        with patch.object(sample_schedule, 'get_next_off', return_value=None):
+            assert sensor.native_value is None
+
+    def test_unique_id(self, mock_coordinator, mock_entry):
+        """Test unique_id format."""
+        sensor = NextOffSensor(mock_coordinator, 12, mock_entry)
+        assert sensor.unique_id == "test_entry_id_next_off"

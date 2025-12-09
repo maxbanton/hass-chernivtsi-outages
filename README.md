@@ -9,12 +9,11 @@
 
 ## Можливості
 
-- **Актуальний графік** - Отримує поточний денний графік відключень
-- **Сенсор стану** - Показує чи є зараз світло: ON, OFF або MAYBE
-- **Бінарний сенсор** - Простий індикатор увімк/вимк для автоматизацій
-- **Календар** - Перегляд періодів відключень у календарі Home Assistant
-- **Час наступної зміни** - Коли буде наступна зміна стану
-- **Залишок годин** - Скільки годин ON/OFF залишилось сьогодні
+- **Поточний стан** - Показує чи є зараз світло (on/off)
+- **Наступне включення** - Час коли світло включать
+- **Наступне відключення** - Час коли світло виключать
+
+> Стан "можливо є" (maybe) вважається як "є світло" (on)
 
 ## Встановлення
 
@@ -43,7 +42,7 @@
 
 ### Як дізнатися номер групи
 
-Відвідайте [oblenergo.cv.ua/shutdowns](https://oblenergo.cv.ua/shutdowns/) та натисніть **"ПОШУК ГРУПИ"**:
+Відвідайте [oblenergo.cv.ua/shutdowns-search](https://oblenergo.cv.ua/shutdowns-search/) для пошуку вашої групи:
 1. Виберіть дільницю
 2. Введіть населений пункт
 3. Введіть вулицю
@@ -53,25 +52,22 @@
 
 ## Сутності (Entities)
 
-Для вашої групи інтеграція створює:
-
 | Сутність | Тип | Опис |
 |----------|-----|------|
-| `sensor.cv_power_state` | Sensor | Поточний стан: `on`, `off`, `maybe` |
-| `binary_sensor.cv_power` | Binary Sensor | ON якщо є світло |
-| `sensor.cv_next_change` | Sensor | Час наступної зміни стану |
-| `sensor.cv_off_hours_remaining` | Sensor | Залишок годин без світла |
-| `sensor.cv_on_hours_remaining` | Sensor | Залишок годин зі світлом |
-| `sensor.cv_schedule` | Sensor | Повний графік з атрибутами |
-| `calendar.cv_outages` | Calendar | Відключення в календарі |
+| `sensor.cv_power_state` | Sensor | Поточний стан: `on` або `off` |
+| `sensor.cv_power_next_on` | Sensor | Час наступного включення |
+| `sensor.cv_power_next_off` | Sensor | Час наступного відключення |
 
-## Стани
+### Атрибути сенсора стану
 
-| Стан | Опис |
-|------|------|
-| `on` | Є світло (з) |
-| `off` | Немає світла (в) |
-| `maybe` | Можливо є світло (мз) |
+Сенсор `sensor.cv_power_state` має додаткові атрибути:
+
+| Атрибут | Опис |
+|---------|------|
+| `schedule_date` | Дата графіку (YYYY-MM-DD) |
+| `group` | Номер групи |
+| `hours_with_power` | Заплановано годин зі світлом |
+| `hours_without_power` | Заплановано годин без світла |
 
 ## Застереження
 
@@ -90,16 +86,15 @@
 
 > **UNOFFICIAL INTEGRATION** - This is a community project and is NOT affiliated with any electricity company. Use at your own risk.
 
-Home Assistant integration for power outage schedule in Chernivtsi region (Чернівецька область), Ukraine.
+Home Assistant integration for power outage schedule in Chernivtsi region, Ukraine.
 
 ## Features
 
-- **Real-time schedule data** - Fetches the current day's power schedule
-- **Power state sensors** - Shows if electricity is currently ON, OFF, or MAYBE
-- **Binary sensors** - Simple on/off indicator for automations
-- **Calendar integration** - View outage periods in Home Assistant calendar
-- **Next change time** - Know when the next power state change will occur
-- **Remaining hours** - See how many ON/OFF hours are left today
+- **Current state** - Shows if electricity is currently on or off
+- **Next ON time** - When power will be turned on
+- **Next OFF time** - When power will be turned off
+
+> "Maybe" state is treated as "on"
 
 ## Installation
 
@@ -128,27 +123,26 @@ Home Assistant integration for power outage schedule in Chernivtsi region (Че�
 
 ### Finding Your Group Number
 
-Visit [oblenergo.cv.ua/shutdowns](https://oblenergo.cv.ua/shutdowns/) and click **"ПОШУК ГРУПИ"** (Search Group) to find your group by address.
+Visit [oblenergo.cv.ua/shutdowns-search](https://oblenergo.cv.ua/shutdowns-search/) to find your group by address.
 
 ## Entities
 
 | Entity | Type | Description |
 |--------|------|-------------|
-| `sensor.cv_power_state` | Sensor | Current state: `on`, `off`, or `maybe` |
-| `binary_sensor.cv_power` | Binary Sensor | ON if power is available |
-| `sensor.cv_next_change` | Sensor | Timestamp of next state change |
-| `sensor.cv_off_hours_remaining` | Sensor | Remaining OFF hours today |
-| `sensor.cv_on_hours_remaining` | Sensor | Remaining ON hours today |
-| `sensor.cv_schedule` | Sensor | Full schedule with attributes |
-| `calendar.cv_outages` | Calendar | Outage periods as calendar events |
+| `sensor.cv_power_state` | Sensor | Current state: `on` or `off` |
+| `sensor.cv_power_next_on` | Sensor | Timestamp of next power ON |
+| `sensor.cv_power_next_off` | Sensor | Timestamp of next power OFF |
 
-## Power States
+### State Sensor Attributes
 
-| State | Description | Ukrainian |
-|-------|-------------|-----------|
-| `on` | Electricity is ON | Заживлено (з) |
-| `off` | Electricity is OFF | Відключено (в) |
-| `maybe` | Possibly ON (gray zone) | Можливо заживлено (мз) |
+The `sensor.cv_power_state` sensor has additional attributes:
+
+| Attribute | Description |
+|-----------|-------------|
+| `schedule_date` | Schedule date (YYYY-MM-DD) |
+| `group` | Group number |
+| `hours_with_power` | Planned hours with electricity |
+| `hours_without_power` | Planned hours without electricity |
 
 ## Development
 
@@ -174,4 +168,4 @@ MIT License
 
 ## Support
 
-If you find this integration useful, please ⭐ star the repository!
+If you find this integration useful, please star the repository!

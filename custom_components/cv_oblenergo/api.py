@@ -107,6 +107,19 @@ class GroupSchedule:
 
         return None
 
+    def get_next_on_or_maybe(self, now: datetime | None = None) -> TimeSlot | None:
+        """Get the next ON or MAYBE slot (both treated as power available)."""
+        if now is None:
+            now = datetime.now()
+
+        current_slot_index = now.hour * 2 + (1 if now.minute >= 30 else 0)
+
+        for i in range(current_slot_index + 1, len(self.slots)):
+            if self.slots[i].state != STATE_OFF:
+                return self.slots[i]
+
+        return None
+
     def count_off_hours_remaining(self, now: datetime | None = None) -> float:
         """Count remaining off hours for today."""
         if now is None:

@@ -143,6 +143,16 @@ class TestGroupSchedule:
         assert slot is not None
         assert slot.hour == 8
         assert slot.minute == 30
+
+    def test_get_next_on_or_maybe(self, schedule):
+        """Test getting next ON or MAYBE slot (both treated as power available)."""
+        # At 05:00 (OFF), next non-OFF should be at 08:00 (MAYBE)
+        now = datetime(2025, 12, 9, 5, 0)
+        slot = schedule.get_next_on_or_maybe(now)
+        assert slot is not None
+        assert slot.hour == 8
+        assert slot.minute == 0
+        assert slot.state == STATE_MAYBE
     
     def test_count_off_hours_remaining(self, schedule):
         """Test counting remaining off hours."""

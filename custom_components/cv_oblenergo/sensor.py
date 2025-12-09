@@ -8,7 +8,6 @@ from typing import Any
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
-    SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -19,9 +18,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     DOMAIN,
     ATTRIBUTION,
-    STATE_ON,
     STATE_OFF,
-    STATE_TRANSLATIONS,
     CONF_GROUP,
 )
 from .coordinator import PowerScheduleCoordinator
@@ -38,13 +35,10 @@ async def async_setup_entry(
     coordinator: PowerScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]
     group = entry.data.get(CONF_GROUP)
 
-    # Create sensors for the configured group
     entities = [
         PowerStateSensor(coordinator, group, entry),
-        NextChangeSensor(coordinator, group, entry),
-        OffHoursRemainingSensor(coordinator, group, entry),
-        OnHoursRemainingSensor(coordinator, group, entry),
-        ScheduleSensor(coordinator, group, entry),
+        NextOnSensor(coordinator, group, entry),
+        NextOffSensor(coordinator, group, entry),
     ]
 
     async_add_entities(entities)
@@ -69,7 +63,7 @@ class PowerScheduleBaseSensor(CoordinatorEntity[PowerScheduleCoordinator], Senso
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, f"{entry.entry_id}")},
-            name="CV",
+            name="CV Power",
             manufacturer="Chernivtsi Region",
             model=f"Group {group}",
         )
@@ -83,9 +77,7 @@ class PowerScheduleBaseSensor(CoordinatorEntity[PowerScheduleCoordinator], Senso
 
 
 class PowerStateSensor(PowerScheduleBaseSensor):
-    """Sensor showing current power state."""
-
-    _attr_icon = "mdi:transmission-tower"
+    """Sensor showing current power state (on/off, maybe treated as on)."""
 
     def __init__(
         self,
@@ -95,17 +87,25 @@ class PowerStateSensor(PowerScheduleBaseSensor):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, group, entry)
-        self._attr_unique_id = f"{entry.entry_id}_power_state"
-        self._attr_translation_key = "power_state"
-        self._attr_name = "Power State"
+        self._attr_unique_id = f"{entry.entry_id}_state"
+        self._attr_name = "State"
 
     @property
     def native_value(self) -> str | None:
-        """Return the current state."""
+        """Return the current state (on/off, maybe treated as on)."""
         schedule = self.group_schedule
         if schedule:
-            return schedule.get_current_state()
+            state = schedule.get_current_state()
+            # Treat "maybe" as "on"
+            return "off" if state == STATE_OFF else "on"
         return None
+
+    @property
+    def icon(self) -> str:
+        """Return dynamic icon based on state."""
+        if self.native_value == "off":
+            return "mdi:flash-off"
+        return "mdi:flash"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -114,36 +114,23 @@ class PowerStateSensor(PowerScheduleBaseSensor):
         if not schedule:
             return {}
 
-        attrs = {
-            "group": self._group,
+        # Count total hours (maybe is treated as on)
+        on_slots = sum(1 for s in schedule.slots if s.state != STATE_OFF)
+        off_slots = sum(1 for s in schedule.slots if s.state == STATE_OFF)
+
+        return {
             "schedule_date": schedule.date.isoformat(),
-            "state_text": STATE_TRANSLATIONS.get(self.native_value, "Unknown"),
+            "group": self._group,
+            "hours_with_power": on_slots * 0.5,
+            "hours_without_power": off_slots * 0.5,
         }
 
-        # Add current slot info
-        current_slot = schedule.get_current_slot()
-        if current_slot:
-            attrs["current_slot"] = current_slot.time_str
 
-        return attrs
-
-    @property
-    def icon(self) -> str:
-        """Return dynamic icon based on state."""
-        state = self.native_value
-        if state == STATE_ON:
-            return "mdi:transmission-tower"
-        elif state == STATE_OFF:
-            return "mdi:transmission-tower-off"
-        else:
-            return "mdi:transmission-tower-import"
-
-
-class NextChangeSensor(PowerScheduleBaseSensor):
-    """Sensor showing next state change time."""
+class NextOnSensor(PowerScheduleBaseSensor):
+    """Sensor showing next turn ON time."""
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
-    _attr_icon = "mdi:clock-outline"
+    _attr_icon = "mdi:flash"
 
     def __init__(
         self,
@@ -153,51 +140,32 @@ class NextChangeSensor(PowerScheduleBaseSensor):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, group, entry)
-        self._attr_unique_id = f"{entry.entry_id}_next_change"
-        self._attr_name = "Next Change"
+        self._attr_unique_id = f"{entry.entry_id}_next_on"
+        self._attr_name = "Next ON"
 
     @property
     def native_value(self) -> datetime | None:
-        """Return the next change time."""
+        """Return the next ON time."""
         schedule = self.group_schedule
         if schedule:
-            next_change = schedule.get_next_change()
-            if next_change:
-                slot, state = next_change
-                # Create datetime for today at the slot time
+            # Get next slot that is not OFF (on or maybe = on)
+            next_on = schedule.get_next_on_or_maybe()
+            if next_on:
                 now = datetime.now()
                 return now.replace(
-                    hour=slot.hour,
-                    minute=slot.minute,
+                    hour=next_on.hour,
+                    minute=next_on.minute,
                     second=0,
                     microsecond=0,
                 )
         return None
 
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes."""
-        schedule = self.group_schedule
-        if not schedule:
-            return {}
 
-        attrs = {"group": self._group}
+class NextOffSensor(PowerScheduleBaseSensor):
+    """Sensor showing next turn OFF time."""
 
-        next_change = schedule.get_next_change()
-        if next_change:
-            slot, state = next_change
-            attrs["next_state"] = state
-            attrs["next_state_text"] = STATE_TRANSLATIONS.get(state, "Unknown")
-
-        return attrs
-
-
-class OffHoursRemainingSensor(PowerScheduleBaseSensor):
-    """Sensor showing remaining off hours today."""
-
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = "h"
-    _attr_icon = "mdi:timer-off-outline"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:flash-off"
 
     def __init__(
         self,
@@ -207,111 +175,21 @@ class OffHoursRemainingSensor(PowerScheduleBaseSensor):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, group, entry)
-        self._attr_unique_id = f"{entry.entry_id}_off_hours"
-        self._attr_name = "Off Hours Remaining"
+        self._attr_unique_id = f"{entry.entry_id}_next_off"
+        self._attr_name = "Next OFF"
 
     @property
-    def native_value(self) -> float | None:
-        """Return remaining off hours."""
+    def native_value(self) -> datetime | None:
+        """Return the next OFF time."""
         schedule = self.group_schedule
         if schedule:
-            return schedule.count_off_hours_remaining()
+            next_off = schedule.get_next_off()
+            if next_off:
+                now = datetime.now()
+                return now.replace(
+                    hour=next_off.hour,
+                    minute=next_off.minute,
+                    second=0,
+                    microsecond=0,
+                )
         return None
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes."""
-        schedule = self.group_schedule
-        if not schedule:
-            return {}
-
-        return {
-            "group": self._group,
-            "off_periods": schedule.get_off_periods(),
-        }
-
-
-class OnHoursRemainingSensor(PowerScheduleBaseSensor):
-    """Sensor showing remaining on hours today."""
-
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = "h"
-    _attr_icon = "mdi:timer-outline"
-
-    def __init__(
-        self,
-        coordinator: PowerScheduleCoordinator,
-        group: int,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator, group, entry)
-        self._attr_unique_id = f"{entry.entry_id}_on_hours"
-        self._attr_name = "On Hours Remaining"
-
-    @property
-    def native_value(self) -> float | None:
-        """Return remaining on hours."""
-        schedule = self.group_schedule
-        if schedule:
-            return schedule.count_on_hours_remaining()
-        return None
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes."""
-        schedule = self.group_schedule
-        if not schedule:
-            return {}
-
-        return {
-            "group": self._group,
-            "on_periods": schedule.get_on_periods(),
-        }
-
-
-class ScheduleSensor(PowerScheduleBaseSensor):
-    """Sensor showing full schedule as JSON."""
-
-    _attr_icon = "mdi:calendar-clock"
-
-    def __init__(
-        self,
-        coordinator: PowerScheduleCoordinator,
-        group: int,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator, group, entry)
-        self._attr_unique_id = f"{entry.entry_id}_schedule"
-        self._attr_name = "Schedule"
-
-    @property
-    def native_value(self) -> str | None:
-        """Return schedule date."""
-        schedule = self.group_schedule
-        if schedule:
-            return schedule.date.isoformat()
-        return None
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return full schedule as attributes."""
-        schedule = self.group_schedule
-        if not schedule:
-            return {}
-
-        # Create hourly schedule dict
-        hourly = {}
-        for slot in schedule.slots:
-            hourly[slot.time_str] = slot.state
-
-        return {
-            "group": self._group,
-            "schedule_date": schedule.date.isoformat(),
-            "schedule": hourly,
-            "off_periods": schedule.get_off_periods(),
-            "on_periods": schedule.get_on_periods(),
-            "total_off_hours": sum(1 for s in schedule.slots if s.state == STATE_OFF) * 0.5,
-            "total_on_hours": sum(1 for s in schedule.slots if s.state == STATE_ON) * 0.5,
-        }

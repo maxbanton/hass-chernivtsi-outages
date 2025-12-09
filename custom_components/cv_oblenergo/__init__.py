@@ -17,7 +17,7 @@ from .coordinator import PowerScheduleCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CALENDAR]
+PLATFORMS: list[Platform] = [Platform.SENSOR]
 
 SCAN_INTERVAL = timedelta(minutes=15)
 

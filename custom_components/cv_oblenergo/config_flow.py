@@ -69,7 +69,7 @@ class PowerScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors,
             description_placeholders={
-                "url": "https://oblenergo.cv.ua/shutdowns/",
+                "url": "https://oblenergo.cv.ua/shutdowns-search/",
             },
         )
 
