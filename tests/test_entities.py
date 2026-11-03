@@ -38,7 +38,7 @@ async def test_states_during_an_outage(
     hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
 ) -> None:
     await _real_day(hass, web, freezer)
-    schedule = state(hass, f"{SENSOR}power_by_schedule")
+    schedule = state(hass, f"{SENSOR}schedule_now")
     assert schedule.state == "off"
     assert schedule.attributes["options"] == ["on", "off", "maybe"]
     assert schedule.attributes["schedule_active"] is True
@@ -46,7 +46,7 @@ async def test_states_during_an_outage(
     assert schedule.attributes["today"][1] == {"start": "17:30", "end": "19:30", "state": "off"}
     assert schedule.attributes["today"][-1] == {"start": "20:00", "end": "24:00", "state": "on"}
     assert schedule.attributes["tomorrow"] is None
-    assert state(hass, "binary_sensor.outage_group_12_outage_by_schedule").state == "on"
+    assert state(hass, "binary_sensor.outage_group_12_power_by_schedule").state == "off"
     assert state(hass, f"{SENSOR}expected_next_outage").state == "unknown"
     back = state(hass, f"{SENSOR}expected_power_back")
     assert back.state == "2026-11-03T17:30:00+00:00"
@@ -66,10 +66,14 @@ async def test_states_change_at_slot_edges_without_fetching(
     site_calls = web.count(SITE_URL)
     freezer.move_to(kyiv(19, 30))
     await advance(hass, freezer, timedelta(seconds=0))
-    assert state(hass, f"{SENSOR}power_by_schedule").state == "maybe"
-    assert state(hass, "binary_sensor.outage_group_12_outage_by_schedule").state == "off"
+    assert state(hass, f"{SENSOR}schedule_now").state == "maybe"
+    assert state(hass, "binary_sensor.outage_group_12_power_by_schedule").state == "off"
     assert state(hass, f"{SENSOR}expected_power_back").state == "unknown"
     assert web.count(SITE_URL) == site_calls
+    freezer.move_to(kyiv(20))
+    await advance(hass, freezer, timedelta(seconds=0))
+    assert state(hass, f"{SENSOR}schedule_now").state == "on"
+    assert state(hass, "binary_sensor.outage_group_12_power_by_schedule").state == "on"
 
 
 async def test_next_outage_and_its_end(
@@ -106,9 +110,9 @@ async def test_unknown_day_leaves_states_unknown(
     await _real_day(hass, web, freezer)
     freezer.move_to(kyiv(0, 10, TOMORROW))
     await advance(hass, freezer, timedelta(seconds=0))
-    for key in ("power_by_schedule", "scheduled_outage_hours_today", "schedule_changed_at"):
+    for key in ("schedule_now", "scheduled_outage_hours_today", "schedule_changed_at"):
         assert state(hass, f"{SENSOR}{key}").state == "unknown"
-    assert state(hass, "binary_sensor.outage_group_12_outage_by_schedule").state == "unknown"
+    assert state(hass, "binary_sensor.outage_group_12_power_by_schedule").state == "unknown"
     hours = state(hass, f"{SENSOR}scheduled_outage_hours_today")
     assert hours.attributes.get("revisions_today") is None
 
@@ -154,7 +158,7 @@ async def test_changing_groups_adds_and_removes_devices(
     devices = dr.async_get(hass)
     hass.config_entries.async_update_entry(entry, options={CONF_GROUPS: [1, 12]})
     await hass.async_block_till_done()
-    assert state(hass, "sensor.outage_group_1_power_by_schedule").state == "on"
+    assert state(hass, "sensor.outage_group_1_schedule_now").state == "on"
     assert devices.async_get_device({device_identifier(1)})
 
     hass.config_entries.async_update_entry(entry, options={CONF_GROUPS: [1]})

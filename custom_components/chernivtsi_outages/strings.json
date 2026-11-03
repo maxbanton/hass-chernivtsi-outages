@@ -62,8 +62,8 @@
   },
   "entity": {
     "binary_sensor": {
-      "outage": {
-        "name": "Outage by schedule"
+      "power": {
+        "name": "Power by schedule"
       }
     },
     "calendar": {
@@ -92,7 +92,7 @@
     },
     "sensor": {
       "schedule": {
-        "name": "Power by schedule",
+        "name": "Schedule now",
         "state": {
           "on": "Power on",
           "off": "Outage",

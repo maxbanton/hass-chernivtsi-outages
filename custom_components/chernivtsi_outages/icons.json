@@ -1,10 +1,10 @@
 {
   "entity": {
     "binary_sensor": {
-      "outage": {
-        "default": "mdi:transmission-tower-off",
+      "power": {
+        "default": "mdi:transmission-tower",
         "state": {
-          "off": "mdi:transmission-tower"
+          "off": "mdi:transmission-tower-off"
         }
       }
     },

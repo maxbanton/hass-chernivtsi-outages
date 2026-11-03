@@ -50,8 +50,8 @@ One device per outage group, with these entities:
 
 | Entity | Example | Description |
 |---|---|---|
-| Power by schedule | `sensor.outage_group_12_power_by_schedule` | `on`, `off` or `maybe` right now, as scheduled. Attributes `today` and `tomorrow` hold the day's periods. |
-| Outage by schedule | `binary_sensor.outage_group_12_outage_by_schedule` | On during a scheduled outage. |
+| Schedule now | `sensor.outage_group_12_schedule_now` | `on`, `off` or `maybe` right now, as scheduled. Attributes `today` and `tomorrow` hold the day's periods. |
+| Power by schedule | `binary_sensor.outage_group_12_power_by_schedule` | On while power is scheduled. Off during an outage and during a possible outage. |
 | Expected next outage | `sensor.outage_group_12_expected_next_outage` | Start of the next scheduled outage that has not begun yet. Attributes: `end`, `duration_hours`. |
 | Expected power back | `sensor.outage_group_12_expected_power_back` | Scheduled end of the current outage, or of the next one. Attribute `then` says whether `on` or `maybe` follows. |
 | Scheduled outage hours today | `sensor.outage_group_12_scheduled_outage_hours_today` | Scheduled outage hours today. |
@@ -114,7 +114,7 @@ frequent changes.
 
 If the site is down, the hours listed in the channel are used. The channel
 lists only the hours with power, so in that case every other half hour is shown
-as an outage, and the Power by schedule sensor has `degraded: true`. Assuming an outage
+as an outage, and the Schedule now sensor has `degraded: true`. Assuming an outage
 is the safer mistake.
 
 When the site shows no schedule at all, there are no outages. Right after a
@@ -148,7 +148,7 @@ card picker (**Chernivtsi Power Outages**) or in YAML:
 
 ```yaml
 type: custom:chernivtsi-outages-card
-entity: sensor.outage_group_12_power_by_schedule
+entity: sensor.outage_group_12_schedule_now
 ```
 
 It looks like the built in cards: a header, a tile style row with the current

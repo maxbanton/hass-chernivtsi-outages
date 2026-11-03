@@ -1,5 +1,5 @@
 // Chernivtsi Power Outages: today's and tomorrow's schedule of one outage group.
-// Reads only the Power by schedule sensor's `today` / `tomorrow` attributes.
+// Reads only the Schedule now sensor's `today` / `tomorrow` attributes.
 
 const TEXT = {
   en: {
@@ -16,7 +16,7 @@ const TEXT = {
     on: "Power on",
     off: "Outage",
     maybe: "Possible outage",
-    entity: "Power by schedule sensor",
+    entity: "Schedule now sensor",
     missing: "Entity not found",
   },
   uk: {
@@ -33,7 +33,7 @@ const TEXT = {
     on: "Є світло",
     off: "Відключення",
     maybe: "Можливе відключення",
-    entity: "Сенсор «Світло за графіком»",
+    entity: "Сенсор «Графік зараз»",
     missing: "Сутність не знайдено",
   },
 };
@@ -221,7 +221,7 @@ class ChernivtsiOutagesCard extends HTMLElement {
 
   setConfig(config) {
     if (!config || typeof config.entity !== "string" || !config.entity.startsWith("sensor.")) {
-      throw new Error("Set `entity` to the Power by schedule sensor of an outage group");
+      throw new Error("Set `entity` to the Schedule now sensor of an outage group");
     }
     if (config.title !== undefined && typeof config.title !== "string") {
       throw new Error("`title` must be text; an empty title hides the header");

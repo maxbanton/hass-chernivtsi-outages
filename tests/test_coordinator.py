@@ -163,12 +163,12 @@ async def test_missing_table_after_a_day_with_outages_is_unknown(
     await advance(hass, freezer, timedelta(hours=1, minutes=1))
     assert web.count(SITE_URL) == 2
     assert TOMORROW not in c.days
-    assert hass.states.get("sensor.outage_group_12_power_by_schedule").state == "unknown"
+    assert hass.states.get("sensor.outage_group_12_schedule_now").state == "unknown"
 
     web.set(TELEGRAM_URL, channel((200, 0, 55, TOMORROW, None)))
     await advance(hass, freezer)
     assert c.days[TOMORROW].active is False
-    assert hass.states.get("sensor.outage_group_12_power_by_schedule").state == "on"
+    assert hass.states.get("sensor.outage_group_12_schedule_now").state == "on"
 
 
 async def test_site_failures_back_off_and_the_channel_fills_in(
