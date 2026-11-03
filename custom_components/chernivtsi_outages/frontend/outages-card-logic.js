@@ -56,7 +56,7 @@ export function mergeDays(today, tomorrow) {
 //   off       in an outage whose end is not published yet
 //   next      the next outage starts at `at`, ending at `to` when that is known
 //   none      no more outages in what is published
-// `tomorrow` says the time falls after midnight.
+// `tomorrow` says the time falls after midnight, and `in` how many minutes are left until it.
 export function nextEvent(attrs, now) {
   if (!Array.isArray(attrs.today)) return { kind: "unknown" };
   if (attrs.schedule_active === false && !(attrs.tomorrow || []).some((p) => p.state === "off")) {
@@ -67,12 +67,22 @@ export function nextEvent(attrs, now) {
   if (inside?.state === "off") {
     const after = merged.find((p) => p.s === inside.e);
     if (!after) return { kind: "off" };
-    return { kind: "back", at: hhmm(inside.e), maybe: after.state === "maybe", tomorrow: inside.e >= DAY };
+    return { kind: "back", at: hhmm(inside.e), maybe: after.state === "maybe", tomorrow: inside.e >= DAY, in: inside.e - now };
   }
   const next = merged.find((p) => p.state === "off" && p.s > now);
   if (!next) return { kind: "none" };
   const ends = merged.some((p) => p.s === next.e);
-  return { kind: "next", at: hhmm(next.s), to: ends ? hhmm(next.e) : null, tomorrow: next.s >= DAY };
+  return { kind: "next", at: hhmm(next.s), to: ends ? hhmm(next.e) : null, tomorrow: next.s >= DAY, in: next.s - now };
+}
+
+// A countdown in whole hours and minutes: [[2, "h"], [10, "min"]]. Under a minute
+// still reads as one, so it never says "in 0 min".
+export function countdown(minutesLeft) {
+  const total = Math.max(1, Math.round(minutesLeft));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (!h) return [[m, "min"]];
+  return m ? [[h, "h"], [m, "min"]] : [[h, "h"]];
 }
 
 // Minutes of outage touching midnight: at the start of `periods` when `first`, else at the end.

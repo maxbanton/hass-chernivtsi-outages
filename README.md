@@ -152,7 +152,7 @@ entity: sensor.outage_group_12_schedule_now
 ```
 
 It looks like the built in cards: a header, a tile style row with the current
-state and what comes next (tap it for the entity's details), and today and
+state and what comes next with a countdown (tap it for the entity's details), and today and
 tomorrow as timelines with a marker at the current time and the length of
 each outage above it. Outages are also
 hatched and possible outages striped, so the card does not rely on colour

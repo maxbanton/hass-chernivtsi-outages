@@ -4,6 +4,7 @@ import { describe, test } from "node:test";
 
 import {
   changedWhen,
+  countdown,
   formatClock,
   hhmm,
   kyivMinutes,
@@ -32,27 +33,27 @@ const schedule = (today, tomorrow = null, active = true) => ({ today: day(today)
 describe("nextEvent", () => {
   test("an outage later today", () => {
     assert.deepEqual(nextEvent(schedule("uu" + "oooo" + "u".repeat(42), ON), at(0, 40)), {
-      kind: "next", at: "01:00", to: "03:00", tomorrow: false,
+      kind: "next", at: "01:00", to: "03:00", tomorrow: false, in: 20,
     });
   });
   test("an outage tomorrow says so", () => {
     assert.deepEqual(nextEvent(schedule(ON, "u".repeat(16) + "ooooo" + "u".repeat(27)), at(23)), {
-      kind: "next", at: "08:00", to: "10:30", tomorrow: true,
+      kind: "next", at: "08:00", to: "10:30", tomorrow: true, in: 540,
     });
   });
   test("power back after midnight says tomorrow, and whether a possible outage follows", () => {
     assert.deepEqual(nextEvent(schedule("o".repeat(48), "oooooo" + "s" + "u".repeat(41)), at(23)), {
-      kind: "back", at: "03:00", maybe: true, tomorrow: true,
+      kind: "back", at: "03:00", maybe: true, tomorrow: true, in: 240,
     });
   });
   test("an outage across midnight is one outage", () => {
     const e = nextEvent(schedule("u".repeat(46) + "oo", "oo" + "u".repeat(46)), at(20));
-    assert.deepEqual(e, { kind: "next", at: "23:00", to: "01:00", tomorrow: false });
+    assert.deepEqual(e, { kind: "next", at: "23:00", to: "01:00", tomorrow: false, in: 180 });
   });
   test("an outage running into an unpublished tomorrow has no known end", () => {
     assert.deepEqual(nextEvent(schedule("u".repeat(46) + "oo", null), at(23, 10)), { kind: "off" });
     assert.deepEqual(nextEvent(schedule("u".repeat(46) + "oo", null), at(20)), {
-      kind: "next", at: "23:00", to: null, tomorrow: false,
+      kind: "next", at: "23:00", to: null, tomorrow: false, in: 180,
     });
   });
   test("no more outages in what is published", () => {
@@ -64,6 +65,19 @@ describe("nextEvent", () => {
   });
   test("an unpublished today is unknown", () => {
     assert.deepEqual(nextEvent({ today: null, tomorrow: null }, at(12)), { kind: "unknown" });
+  });
+});
+
+describe("countdown", () => {
+  test("minutes, hours and minutes, whole hours", () => {
+    assert.deepEqual(countdown(25), [[25, "min"]]);
+    assert.deepEqual(countdown(130), [[2, "h"], [10, "min"]]);
+    assert.deepEqual(countdown(120), [[2, "h"]]);
+    assert.deepEqual(countdown(1500), [[25, "h"]]);
+  });
+  test("never says in 0 minutes", () => {
+    assert.deepEqual(countdown(0), [[1, "min"]]);
+    assert.deepEqual(countdown(0.4), [[1, "min"]]);
   });
 });
 

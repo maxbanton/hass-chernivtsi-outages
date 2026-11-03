@@ -4,7 +4,7 @@
 // live in outages-card-logic.js, loaded with this file's version query so an update
 // never pairs this card with a cached old copy.
 
-const { changedWhen, formatClock, kyivMinutes, minutes, nextEvent, outageMarks, overnight } = await import(
+const { changedWhen, countdown, formatClock, kyivMinutes, minutes, nextEvent, outageMarks, overnight } = await import(
   `./outages-card-logic.js${new URL(import.meta.url).search}`
 );
 
@@ -32,6 +32,7 @@ const TEXT = {
     entity: "Schedule now sensor",
     missing: "Entity not found",
     hours: (h) => `${h} h`,
+    in: (parts) => `in ${parts.map(([n, u]) => `${n} ${u}`).join(" ")}`,
     changed: (when, at) => ({ today: `Changed ${at}`, yesterday: `Changed yesterday ${at}` })[when] || `Changed ${when} ${at}`,
   },
   uk: {
@@ -57,6 +58,7 @@ const TEXT = {
     entity: "Сенсор «Графік зараз»",
     missing: "Сутність не знайдено",
     hours: (h) => `${h} год`,
+    in: (parts) => `через ${parts.map(([n, u]) => `${n} ${{ h: "год", min: "хв" }[u]}`).join(" ")}`,
     changed: (when, at) => ({ today: `Змінено о ${at}`, yesterday: `Змінено вчора о ${at}` })[when] || `Змінено ${when} о ${at}`,
   },
 };
@@ -391,9 +393,9 @@ class ChernivtsiOutagesCard extends HTMLElement {
       case "off":
         return t.off;
       case "back":
-        return t.powerBack(at(e.at), e.maybe, e.tomorrow);
+        return `${t.powerBack(at(e.at), e.maybe, e.tomorrow)} · ${t.in(countdown(e.in))}`;
       case "next":
-        return t.nextOutage(at(e.at), e.to ? at(e.to) : null, e.tomorrow);
+        return `${t.nextOutage(at(e.at), e.to ? at(e.to) : null, e.tomorrow)} · ${t.in(countdown(e.in))}`;
       default:
         return t.noNext;
     }
