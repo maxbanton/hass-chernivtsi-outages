@@ -1,9 +1,9 @@
 // Chernivtsi Power Outages: today's and tomorrow's schedule of one outage group.
-// Reads only the Schedule sensor's `today` / `tomorrow` attributes.
+// Reads only the Power by schedule sensor's `today` / `tomorrow` attributes.
 
 const TEXT = {
   en: {
-    group: (n) => `Group ${n}`,
+    title: (n) => `Outage group ${n}`,
     today: "Today",
     tomorrow: "Tomorrow",
     notPublished: "Not published yet",
@@ -16,11 +16,11 @@ const TEXT = {
     on: "Power on",
     off: "Outage",
     maybe: "Possible outage",
-    entity: "Schedule sensor",
+    entity: "Power by schedule sensor",
     missing: "Entity not found",
   },
   uk: {
-    group: (n) => `Група ${n}`,
+    title: (n) => `Група відключень ${n}`,
     today: "Сьогодні",
     tomorrow: "Завтра",
     notPublished: "Ще не опубліковано",
@@ -33,9 +33,16 @@ const TEXT = {
     on: "Є світло",
     off: "Відключення",
     maybe: "Можливе відключення",
-    entity: "Сенсор графіка",
+    entity: "Сенсор «Світло за графіком»",
     missing: "Сутність не знайдено",
   },
+};
+
+// Material Design Icons, the set Home Assistant uses: flash, flash-off, flash-alert.
+const ICONS = {
+  on: "M7,2V13H10V22L17,10H13L17,2H7Z",
+  off: "M17,10H13L17,2H7V4.18L15.46,12.64M3.27,3L2,4.27L7,9.27V13H10V22L13.58,15.86L17.73,20L19,18.73L3.27,3Z",
+  maybe: "M5,2V13H8V22L15,10H11L15,2M17,15H19V17H17V15M17,7H19V13H17V7Z",
 };
 
 const KYIV = new Intl.DateTimeFormat("en-GB", {
@@ -46,35 +53,98 @@ const KYIV = new Intl.DateTimeFormat("en-GB", {
 });
 
 const STYLE = `
-  :host { --co-on: var(--success-color, #43a047); --co-off: var(--error-color, #db4437); --co-maybe: var(--disabled-color, #9e9e9e); }
-  .body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-  .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .name { font-size: 1.1em; font-weight: 500; color: var(--primary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .state { flex: none; padding: 2px 10px; border-radius: 12px; font-size: 0.9em; font-weight: 500; color: var(--primary-text-color); background: var(--secondary-background-color); border: 1px solid var(--divider-color); }
-  .state.on { border-color: var(--co-on); }
-  .state.off { border-color: var(--co-off); }
-  .state.maybe { border-style: dashed; border-color: var(--co-maybe); }
-  .summary { color: var(--secondary-text-color); }
+  :host {
+    --co-on: var(--success-color, #43a047);
+    --co-off: var(--error-color, #db4437);
+    --co-maybe: color-mix(in srgb, var(--secondary-text-color, #727272) 55%, transparent);
+    --co-none: var(--divider-color, rgba(0, 0, 0, 0.12));
+  }
+  ha-card { overflow: hidden; height: 100%; display: flex; flex-direction: column; }
+  .card-header {
+    color: var(--ha-card-header-color, var(--primary-text-color));
+    font-family: var(--ha-card-header-font-family, inherit);
+    font-size: var(--ha-card-header-font-size, var(--ha-font-size-2xl, 24px));
+    font-weight: var(--ha-font-weight-normal, 400);
+    letter-spacing: -0.012em;
+    line-height: var(--ha-line-height-expanded, 1.5);
+    padding: 12px 16px 4px;
+    margin: 0;
+  }
+  .tile {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; margin: 0; cursor: pointer; outline: none;
+    border-radius: var(--ha-card-border-radius, 12px);
+  }
+  .tile:focus-visible { box-shadow: inset 0 0 0 2px var(--primary-color); }
+  .icon {
+    flex: none; width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    --tile-color: var(--co-none);
+    color: var(--tile-color);
+    background: color-mix(in srgb, var(--tile-color) 20%, transparent);
+  }
+  .icon.on { --tile-color: var(--co-on); }
+  .icon.off { --tile-color: var(--co-off); }
+  .icon.maybe { --tile-color: var(--secondary-text-color); }
+  .icon svg { width: 24px; height: 24px; fill: currentColor; }
+  .info { min-width: 0; display: flex; flex-direction: column; }
+  .primary {
+    color: var(--primary-text-color);
+    font-size: var(--ha-font-size-m, 14px); font-weight: var(--ha-font-weight-medium, 500);
+    line-height: 20px; letter-spacing: 0.1px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .secondary {
+    color: var(--secondary-text-color);
+    font-size: var(--ha-font-size-s, 12px); line-height: 16px; letter-spacing: 0.4px;
+  }
+  .timeline { padding: 4px 16px 0; display: flex; flex-direction: column; gap: 10px; }
   .day { display: flex; flex-direction: column; gap: 4px; }
-  .label { font-size: 0.85em; color: var(--secondary-text-color); }
-  .bar { position: relative; display: flex; gap: 1px; height: 22px; }
-  .cell { flex: 1 1 0; min-width: 0; border-radius: 2px; box-sizing: border-box; }
-  .cell.on { background: var(--co-on); }
-  .cell.off { background: repeating-linear-gradient(135deg, var(--co-off) 0 3px, color-mix(in srgb, var(--co-off) 55%, transparent) 3px 5px); }
-  .cell.maybe { background: color-mix(in srgb, var(--co-maybe) 70%, transparent); border: 1px dashed var(--secondary-text-color); }
-  .cell.none { background: var(--divider-color); }
-  .cell.past { opacity: 0.4; }
-  .now { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--primary-text-color); border-radius: 1px; }
-  .ticks { position: relative; height: 1.2em; font-size: 0.75em; color: var(--secondary-text-color); }
+  .label { color: var(--secondary-text-color); font-size: var(--ha-font-size-s, 12px); line-height: 16px; }
+  .empty {
+    height: 20px; box-sizing: border-box; border-radius: 6px;
+    border: 1px dashed var(--divider-color, rgba(0, 0, 0, 0.12));
+    display: flex; align-items: center; justify-content: center;
+    color: var(--secondary-text-color); font-size: var(--ha-font-size-s, 12px);
+  }
+  .bar {
+    position: relative; display: flex; height: 20px;
+    border-radius: 6px; overflow: visible;
+  }
+  .segments { display: flex; width: 100%; height: 100%; border-radius: 6px; overflow: hidden; }
+  .seg { height: 100%; min-width: 0; }
+  .seg.on { background: var(--co-on); }
+  .seg.off {
+    background-color: var(--co-off);
+    background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0 3px, transparent 3px 7px);
+  }
+  .seg.maybe {
+    background-color: var(--co-maybe);
+    background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.3) 0 2px, transparent 2px 5px);
+  }
+  .seg.none { background: var(--co-none); }
+  .past {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    border-radius: 6px 0 0 6px;
+    background: var(--ha-card-background, var(--card-background-color, #fff));
+    opacity: 0.55; pointer-events: none;
+  }
+  .now {
+    position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px;
+    border-radius: 1px; background: var(--primary-text-color); pointer-events: none;
+  }
+  .ticks { position: relative; height: 16px; color: var(--secondary-text-color); font-size: 11px; line-height: 16px; }
   .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
   .ticks span:first-child { transform: none; }
   .ticks span:last-child { transform: translateX(-100%); }
-  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85em; color: var(--secondary-text-color); }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 16px 16px;
+    color: var(--secondary-text-color); font-size: var(--ha-font-size-s, 12px); line-height: 16px;
+  }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .legend .cell { display: inline-block; width: 14px; height: 14px; flex: none; }
-  .muted { color: var(--secondary-text-color); font-size: 0.9em; }
-  .note { font-style: italic; }
-  .warning { color: var(--error-color); }
+  .legend .seg { display: inline-block; width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .note { padding: 0 16px 16px; margin-top: -8px; color: var(--secondary-text-color); font-size: var(--ha-font-size-s, 12px); line-height: 16px; }
+  .warning { padding: 16px; color: var(--error-color); }
 `;
 
 function el(tag, props = {}, children = []) {
@@ -87,6 +157,17 @@ function el(tag, props = {}, children = []) {
   }
   for (const child of children) if (child) node.append(child);
   return node;
+}
+
+function icon(state) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", ICONS[state] || ICONS.maybe);
+  svg.append(path);
+  return svg;
 }
 
 function text(hass) {
@@ -119,17 +200,9 @@ function formatTime(hass, value) {
 }
 
 function formatHour(hass, hour) {
-  if (!uses12h(hass)) return `${String(hour % 24).padStart(2, "0")}:00`;
   const h = hour % 24;
+  if (!uses12h(hass)) return `${String(h).padStart(2, "0")}:00`;
   return `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
-}
-
-function slots(periods) {
-  const cells = new Array(48).fill(null);
-  for (const p of periods || []) {
-    for (let i = minutes(p.start) / 30; i < minutes(p.end) / 30; i++) cells[i] = p.state;
-  }
-  return cells;
 }
 
 function isSchedule(state) {
@@ -148,7 +221,10 @@ class ChernivtsiOutagesCard extends HTMLElement {
 
   setConfig(config) {
     if (!config || typeof config.entity !== "string" || !config.entity.startsWith("sensor.")) {
-      throw new Error("Set `entity` to the Schedule sensor of an outage group");
+      throw new Error("Set `entity` to the Power by schedule sensor of an outage group");
+    }
+    if (config.title !== undefined && typeof config.title !== "string") {
+      throw new Error("`title` must be text; an empty title hides the header");
     }
     this._config = config;
     this._key = null;
@@ -173,24 +249,37 @@ class ChernivtsiOutagesCard extends HTMLElement {
     return { columns: 12, min_columns: 6, rows: 4, min_rows: 3 };
   }
 
-  _row(label, periods, now, t) {
-    if (!Array.isArray(periods)) return null;
-    const current = now === null ? -1 : Math.floor(now / 30);
-    const bar = el("div", { class: "bar", role: "img", "aria-label": label });
-    slots(periods).forEach((state, i) => {
-      bar.append(
-        el("span", {
-          class: `cell ${state || "none"}${i < current ? " past" : ""}`,
-          title: `${formatTime(this._hass, hhmm(i * 30))} ${state ? t[state] : ""}`,
-        })
-      );
-    });
-    if (now !== null) bar.append(el("span", { class: "now", style: { left: `${(now / 1440) * 100}%` } }));
-    return el("div", { class: "day" }, [el("div", { class: "label", text: label }), bar]);
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: this._config.entity }, bubbles: true, composed: true }));
   }
 
-  _missingRow(label, message) {
-    return el("div", { class: "day" }, [el("div", { class: "label", text: label }), el("div", { class: "muted", text: message })]);
+  _bar(periods, now, t) {
+    const bar = el("div", { class: "bar" });
+    const segments = el("div", { class: "segments" });
+    for (const p of periods) {
+      const start = minutes(p.start);
+      const end = minutes(p.end);
+      segments.append(
+        el("div", {
+          class: `seg ${p.state}`,
+          style: { flex: `${end - start} 0 0` },
+          title: `${formatTime(this._hass, p.start)}-${formatTime(this._hass, p.end)} ${t[p.state] || ""}`,
+        })
+      );
+    }
+    bar.append(segments);
+    if (now !== null) {
+      bar.append(el("div", { class: "past", style: { width: `${(now / 1440) * 100}%` } }));
+      bar.append(el("div", { class: "now", style: { left: `${(now / 1440) * 100}%` } }));
+    }
+    return bar;
+  }
+
+  _day(label, periods, now, t, missing) {
+    const body = Array.isArray(periods)
+      ? this._bar(periods, now, t)
+      : el("div", { class: "empty", text: missing });
+    return el("div", { class: "day", role: "group", "aria-label": label }, [el("div", { class: "label", text: label }), body]);
   }
 
   _summary(a, now, t) {
@@ -223,37 +312,55 @@ class ChernivtsiOutagesCard extends HTMLElement {
     const t = text(this._hass);
     const state = this._hass.states[this._config.entity];
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
-    const body = el("div", { class: "body" });
+    const card = el("ha-card");
     if (!state) {
-      body.append(el("div", { class: "warning", text: `${t.missing}: ${this._config.entity}` }));
-    } else {
-      const a = state.attributes;
-      const now = minutes(KYIV.format(new Date()));
-      const current = this._hass.formatEntityState ? this._hass.formatEntityState(state) : state.state;
-      const ticks = el(
-        "div",
-        { class: "ticks" },
-        [0, 6, 12, 18, 24].map((h) => el("span", { text: formatHour(this._hass, h), style: { left: `${(h / 24) * 100}%` } }))
-      );
-      const legend = el(
-        "div",
-        { class: "legend" },
-        ["on", "off", "maybe"].map((s) => el("span", {}, [el("i", { class: `cell ${s}` }), document.createTextNode(t[s])]))
-      );
-      body.append(
-        el("div", { class: "head" }, [
-          el("div", { class: "name", text: this._config.title || (a.group ? t.group(a.group) : a.friendly_name) }),
-          el("div", { class: `state ${state.state}`, text: current }),
-        ]),
-        el("div", { class: "summary", text: this._summary(a, now, t) }),
-        this._row(t.today, a.today, now, t) || this._missingRow(t.today, t.unknown),
-        this._row(t.tomorrow, a.tomorrow, null, t) || this._missingRow(t.tomorrow, t.notPublished),
-        ticks,
-        legend,
-        ...(a.degraded ? [el("div", { class: "muted note", text: t.degraded })] : [])
-      );
+      card.append(el("div", { class: "warning", text: `${t.missing}: ${this._config.entity}` }));
+      this.shadowRoot.replaceChildren(el("style", { text: STYLE }), card);
+      return;
     }
-    this.shadowRoot.replaceChildren(el("style", { text: STYLE }), el("ha-card", {}, [body]));
+    const a = state.attributes;
+    const now = minutes(KYIV.format(new Date()));
+    const title = this._config.title ?? (a.group ? t.title(a.group) : a.friendly_name);
+    const current = this._hass.formatEntityState ? this._hass.formatEntityState(state) : t[state.state] || state.state;
+
+    const tile = el("div", { class: "tile", role: "button", tabindex: "0" }, [
+      el("div", { class: `icon ${state.state}` }, [icon(state.state)]),
+      el("div", { class: "info" }, [
+        el("div", { class: "primary", text: current }),
+        el("div", { class: "secondary", text: this._summary(a, now, t) }),
+      ]),
+    ]);
+    tile.addEventListener("click", () => this._moreInfo());
+    tile.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        this._moreInfo();
+      }
+    });
+
+    const ticks = el(
+      "div",
+      { class: "ticks", "aria-hidden": "true" },
+      [0, 6, 12, 18, 24].map((h) => el("span", { text: formatHour(this._hass, h), style: { left: `${(h / 24) * 100}%` } }))
+    );
+    const legend = el(
+      "div",
+      { class: "legend" },
+      ["on", "off", "maybe"].map((s) => el("span", {}, [el("i", { class: `seg ${s}` }), document.createTextNode(t[s])]))
+    );
+
+    card.append(
+      ...(title ? [el("h1", { class: "card-header", text: title })] : []),
+      tile,
+      el("div", { class: "timeline" }, [
+        this._day(t.today, a.today, now, t, t.unknown),
+        this._day(t.tomorrow, a.tomorrow, null, t, t.notPublished),
+        ticks,
+      ]),
+      legend,
+      ...(a.degraded ? [el("div", { class: "note", text: t.degraded })] : [])
+    );
+    this.shadowRoot.replaceChildren(el("style", { text: STYLE }), card);
   }
 }
 

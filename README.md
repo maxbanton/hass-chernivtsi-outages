@@ -151,10 +151,11 @@ type: custom:chernivtsi-outages-card
 entity: sensor.outage_group_12_power_by_schedule
 ```
 
-It shows today and tomorrow as 48 half hour cells, a marker at the current
-time, the next outage or when power comes back, and a legend. Outages are also
-hatched and possible outages outlined, so the card does not rely on colour
-alone. `title` overrides the heading.
+It looks like the built in cards: a header, a tile style row with the current
+state and what comes next (tap it for the entity's details), and today and
+tomorrow as timelines with a marker at the current time. Outages are also
+hatched and possible outages striped, so the card does not rely on colour
+alone. `title` replaces the header text; an empty `title` hides the header.
 
 ## Automation examples
 
