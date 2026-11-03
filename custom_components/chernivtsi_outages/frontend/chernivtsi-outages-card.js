@@ -18,6 +18,7 @@ const TEXT = {
     maybe: "Possible outage",
     entity: "Schedule now sensor",
     missing: "Entity not found",
+    hours: (h) => `${h} h`,
   },
   uk: {
     title: (n) => `Група відключень ${n}`,
@@ -35,6 +36,7 @@ const TEXT = {
     maybe: "Можливе відключення",
     entity: "Сенсор «Графік зараз»",
     missing: "Сутність не знайдено",
+    hours: (h) => `${h} год`,
   },
 };
 
@@ -107,6 +109,13 @@ const STYLE = `
     display: flex; align-items: center; justify-content: center;
     color: var(--secondary-text-color); font-size: var(--ha-font-size-s, 12px);
   }
+  .marks {
+    position: relative; height: 14px; margin-bottom: -2px;
+    font-size: 11px; line-height: 14px; font-variant-numeric: tabular-nums;
+    color: var(--primary-text-color); font-weight: var(--ha-font-weight-medium, 500);
+  }
+  .marks span { position: absolute; white-space: nowrap; }
+  .marks span.done { color: var(--secondary-text-color); font-weight: var(--ha-font-weight-normal, 400); }
   .bar {
     position: relative; display: flex; height: 20px;
     border-radius: 6px; overflow: visible;
@@ -205,6 +214,37 @@ function formatHour(hass, hour) {
   return `${h % 12 || 12} ${h < 12 ? "AM" : "PM"}`;
 }
 
+const NUMBER_LOCALES = { comma_decimal: "en-US", decimal_comma: "de-DE", space_comma: "fr-FR", none: "en-US" };
+
+function formatHours(hass, value) {
+  const format = hass?.locale?.number_format;
+  const locale = format === "system" ? undefined : NUMBER_LOCALES[format] || hass?.locale?.language;
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 1, useGrouping: false }).format(value);
+}
+
+// Centre each duration over its outage, keep it inside the bar, and drop the ones that would collide.
+function fitMarks(row) {
+  const width = row.clientWidth;
+  if (!width) return;
+  let right = -Infinity;
+  for (const mark of row.children) {
+    mark.style.visibility = "";
+    const w = mark.offsetWidth;
+    const left = Math.min(Math.max(Number(mark.dataset.mid) * width - w / 2, 0), width - w);
+    mark.style.left = `${left}px`;
+    if (left < right + 6) mark.style.visibility = "hidden";
+    else right = left + w;
+  }
+}
+
+// Minutes of outage touching midnight: at the start of `periods` when `first`, else at the end.
+function overnight(periods, first) {
+  if (!Array.isArray(periods) || !periods.length) return 0;
+  const p = first ? periods[0] : periods[periods.length - 1];
+  if (p.state !== "off" || (first ? p.start !== "00:00" : p.end !== "24:00")) return 0;
+  return minutes(p.end) - minutes(p.start);
+}
+
 function isSchedule(state) {
   return state && Array.isArray(state.attributes.today) && "schedule_active" in state.attributes;
 }
@@ -275,11 +315,50 @@ class ChernivtsiOutagesCard extends HTMLElement {
     return bar;
   }
 
-  _day(label, periods, now, t, missing) {
-    const body = Array.isArray(periods)
-      ? this._bar(periods, now, t)
-      : el("div", { class: "empty", text: missing });
-    return el("div", { class: "day", role: "group", "aria-label": label }, [el("div", { class: "label", text: label }), body]);
+  // `carry` is the length of the same outage on the other side of midnight, so both halves show its full length.
+  _marks(periods, now, t, carry) {
+    const outages = periods.filter((p) => p.state === "off");
+    if (!outages.length) return null;
+    return el(
+      "div",
+      { class: "marks" },
+      outages.map((p) => {
+        const start = minutes(p.start);
+        const end = minutes(p.end);
+        const extra = (start === 0 ? carry.before : 0) + (end === 1440 ? carry.after : 0);
+        return el("span", {
+          class: now !== null && end <= now ? "done" : "",
+          "data-mid": String((start + end) / 2 / 1440),
+          text: t.hours(formatHours(this._hass, (end - start + extra) / 60)),
+        });
+      })
+    );
+  }
+
+  _day(label, periods, now, t, missing, carry = { before: 0, after: 0 }) {
+    const known = Array.isArray(periods);
+    const body = known ? this._bar(periods, now, t) : el("div", { class: "empty", text: missing });
+    return el("div", { class: "day", role: "group", "aria-label": label }, [
+      el("div", { class: "label", text: label }),
+      known ? this._marks(periods, now, t, carry) : null,
+      body,
+    ]);
+  }
+
+  _fit() {
+    for (const row of this.shadowRoot.querySelectorAll(".marks")) fitMarks(row);
+  }
+
+  connectedCallback() {
+    if (!this._resize && "ResizeObserver" in window) {
+      this._resize = new ResizeObserver(() => this.shadowRoot && this._fit());
+      this._resize.observe(this);
+    }
+  }
+
+  disconnectedCallback() {
+    this._resize?.disconnect();
+    this._resize = null;
   }
 
   _summary(a, now, t) {
@@ -353,14 +432,15 @@ class ChernivtsiOutagesCard extends HTMLElement {
       ...(title ? [el("h1", { class: "card-header", text: title })] : []),
       tile,
       el("div", { class: "timeline" }, [
-        this._day(t.today, a.today, now, t, t.unknown),
-        this._day(t.tomorrow, a.tomorrow, null, t, t.notPublished),
+        this._day(t.today, a.today, now, t, t.unknown, { before: 0, after: overnight(a.tomorrow, true) }),
+        this._day(t.tomorrow, a.tomorrow, null, t, t.notPublished, { before: overnight(a.today, false), after: 0 }),
         ticks,
       ]),
       legend,
       ...(a.degraded ? [el("div", { class: "note", text: t.degraded })] : [])
     );
     this.shadowRoot.replaceChildren(el("style", { text: STYLE }), card);
+    this._fit();
   }
 }
 
