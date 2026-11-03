@@ -56,6 +56,7 @@ const KYIV = new Intl.DateTimeFormat("en-GB", {
 
 const STYLE = `
   :host {
+    display: block;
     --co-on: var(--success-color, #43a047);
     --co-off: var(--error-color, #db4437);
     --co-maybe: color-mix(in srgb, var(--secondary-text-color, #727272) 55%, transparent);
@@ -114,7 +115,7 @@ const STYLE = `
     font-size: 11px; line-height: 14px; font-variant-numeric: tabular-nums;
     color: var(--primary-text-color); font-weight: var(--ha-font-weight-medium, 500);
   }
-  .marks span { position: absolute; white-space: nowrap; }
+  .marks span { position: absolute; white-space: nowrap; transform: translateX(-50%); }
   .marks span.done { color: var(--secondary-text-color); font-weight: var(--ha-font-weight-normal, 400); }
   .bar {
     position: relative; display: flex; height: 20px;
@@ -222,7 +223,9 @@ function formatHours(hass, value) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 1, useGrouping: false }).format(value);
 }
 
-// Centre each duration over its outage, keep it inside the bar, and drop the ones that would collide.
+// CSS already centres each duration over its outage. When the card is laid out, also
+// keep the edge ones inside the bar and drop the ones that would collide; a card
+// rendered while hidden has no width yet and keeps the CSS placement.
 function fitMarks(row) {
   const width = row.clientWidth;
   if (!width) return;
@@ -232,6 +235,7 @@ function fitMarks(row) {
     const w = mark.offsetWidth;
     const left = Math.min(Math.max(Number(mark.dataset.mid) * width - w / 2, 0), width - w);
     mark.style.left = `${left}px`;
+    mark.style.transform = "none";
     if (left < right + 6) mark.style.visibility = "hidden";
     else right = left + w;
   }
@@ -329,6 +333,7 @@ class ChernivtsiOutagesCard extends HTMLElement {
         return el("span", {
           class: now !== null && end <= now ? "done" : "",
           "data-mid": String((start + end) / 2 / 1440),
+          style: { left: `${((start + end) / 2 / 1440) * 100}%` },
           text: t.hours(formatHours(this._hass, (end - start + extra) / 60)),
         });
       })
@@ -350,6 +355,7 @@ class ChernivtsiOutagesCard extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this.shadowRoot) requestAnimationFrame(() => this._fit());
     if (!this._resize && "ResizeObserver" in window) {
       this._resize = new ResizeObserver(() => this.shadowRoot && this._fit());
       this._resize.observe(this);
@@ -441,6 +447,7 @@ class ChernivtsiOutagesCard extends HTMLElement {
     );
     this.shadowRoot.replaceChildren(el("style", { text: STYLE }), card);
     this._fit();
+    requestAnimationFrame(() => this._fit());
   }
 }
 
