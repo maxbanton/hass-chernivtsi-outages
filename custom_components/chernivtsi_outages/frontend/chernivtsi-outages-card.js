@@ -1,5 +1,6 @@
 // Chernivtsi Power Outages: today's and tomorrow's schedule of one outage group.
-// Reads only the Schedule now sensor's `today` / `tomorrow` attributes.
+// Reads the Schedule now sensor's `today` / `tomorrow` attributes, and the time of
+// the last change from the Schedule changed at sensor of the same group.
 
 const TEXT = {
   en: {
@@ -19,6 +20,7 @@ const TEXT = {
     entity: "Schedule now sensor",
     missing: "Entity not found",
     hours: (h) => `${h} h`,
+    changed: (when, at) => ({ today: `Changed ${at}`, yesterday: `Changed yesterday ${at}` })[when] || `Changed ${when} ${at}`,
   },
   uk: {
     title: (n) => `Група відключень ${n}`,
@@ -37,6 +39,7 @@ const TEXT = {
     entity: "Сенсор «Графік зараз»",
     missing: "Сутність не знайдено",
     hours: (h) => `${h} год`,
+    changed: (when, at) => ({ today: `Змінено о ${at}`, yesterday: `Змінено вчора о ${at}` })[when] || `Змінено ${when} о ${at}`,
   },
 };
 
@@ -46,6 +49,8 @@ const ICONS = {
   off: "M17,10H13L17,2H7V4.18L15.46,12.64M3.27,3L2,4.27L7,9.27V13H10V22L13.58,15.86L17.73,20L19,18.73L3.27,3Z",
   maybe: "M5,2V13H8V22L15,10H11L15,2M17,15H19V17H17V15M17,7H19V13H17V7Z",
 };
+
+const KYIV_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" });
 
 const KYIV = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Kyiv",
@@ -153,6 +158,7 @@ const STYLE = `
   }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .legend .seg { display: inline-block; width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .legend .changed { margin-left: auto; }
   .note { padding: 0 16px 16px; margin-top: -8px; color: var(--secondary-text-color); font-size: var(--ha-font-size-s, 12px); line-height: 16px; }
   .warning { padding: 16px; color: var(--error-color); }
 `;
@@ -279,7 +285,8 @@ class ChernivtsiOutagesCard extends HTMLElement {
     this._hass = hass;
     const state = hass.states[this._config?.entity];
     // Redraw when the sensor or the locale changes, and once a minute for the now marker.
-    const key = [state?.last_updated, Math.floor(Date.now() / 60000), hass.locale?.language, hass.locale?.time_format].join("|");
+    const changed = hass.states[this._changedId()]?.state;
+    const key = [state?.last_updated, changed, Math.floor(Date.now() / 60000), hass.locale?.language, hass.locale?.time_format].join("|");
     if (key === this._key) return;
     this._key = key;
     this._render();
@@ -291,6 +298,26 @@ class ChernivtsiOutagesCard extends HTMLElement {
 
   getGridOptions() {
     return { columns: 12, min_columns: 6, rows: 4, min_rows: 3 };
+  }
+
+  // The group's Schedule changed at sensor, found by its key on the same device.
+  _changedId() {
+    const entities = this._hass?.entities || {};
+    const device = entities[this._config?.entity]?.device_id;
+    if (!device) return undefined;
+    return Object.values(entities).find((e) => e.platform === "chernivtsi_outages" && e.translation_key === "changed" && e.device_id === device)?.entity_id;
+  }
+
+  _changedText(t) {
+    const value = this._hass.states[this._changedId()]?.state;
+    const date = value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) return null;
+    const day = KYIV_DAY.format(date);
+    const today = KYIV_DAY.format(new Date());
+    const yesterday = KYIV_DAY.format(new Date(Date.now() - 86400000));
+    const at = formatTime(this._hass, KYIV.format(date));
+    const when = day === today ? "today" : day === yesterday ? "yesterday" : `${day.slice(8, 10)}.${day.slice(5, 7)}`;
+    return t.changed(when, at);
   }
 
   _moreInfo() {
@@ -428,11 +455,11 @@ class ChernivtsiOutagesCard extends HTMLElement {
       { class: "ticks", "aria-hidden": "true" },
       [0, 6, 12, 18, 24].map((h) => el("span", { text: formatHour(this._hass, h), style: { left: `${(h / 24) * 100}%` } }))
     );
-    const legend = el(
-      "div",
-      { class: "legend" },
-      ["on", "off", "maybe"].map((s) => el("span", {}, [el("i", { class: `seg ${s}` }), document.createTextNode(t[s])]))
-    );
+    const changed = this._changedText(t);
+    const legend = el("div", { class: "legend" }, [
+      ...["on", "off", "maybe"].map((s) => el("span", {}, [el("i", { class: `seg ${s}` }), document.createTextNode(t[s])])),
+      changed ? el("span", { class: "changed", text: changed }) : null,
+    ]);
 
     card.append(
       ...(title ? [el("h1", { class: "card-header", text: title })] : []),
