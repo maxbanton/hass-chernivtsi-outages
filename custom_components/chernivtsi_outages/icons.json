@@ -38,7 +38,7 @@
       "possible_outage_hours": {
         "default": "mdi:timer-alert-outline"
       },
-      "updated": {
+      "changed": {
         "default": "mdi:update"
       }
     }

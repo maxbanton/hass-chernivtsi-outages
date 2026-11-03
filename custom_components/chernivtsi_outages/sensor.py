@@ -34,7 +34,7 @@ async def async_setup_entry(
             PowerBackSensor(coordinator, group),
             HoursSensor(coordinator, group, "outage_hours", Slot.OFF),
             HoursSensor(coordinator, group, "possible_outage_hours", Slot.MAYBE),
-            UpdatedSensor(coordinator, group),
+            ChangedSensor(coordinator, group),
         )
     )
 
@@ -157,16 +157,22 @@ class HoursSensor(GroupEntity, SensorEntity):
         }
 
 
-class UpdatedSensor(GroupEntity, SensorEntity):
-    """The time the publisher says today's schedule is current as of."""
+class ChangedSensor(GroupEntity, SensorEntity):
+    """When today's schedule last changed, not when it was last re-stamped."""
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator: OutageCoordinator, group: int) -> None:
-        super().__init__(coordinator, group, "updated")
+        super().__init__(coordinator, group, "changed")
 
     @property
     def native_value(self) -> datetime | None:
         today = self.coordinator.today(self.now)
-        return today.updated if today else None
+        return today.changed if today else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        today = self.coordinator.today(self.now)
+        updated = today.updated if today else None
+        return {"as_of": updated.isoformat() if updated else None}

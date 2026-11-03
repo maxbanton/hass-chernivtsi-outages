@@ -50,6 +50,7 @@ async def async_get_config_entry_diagnostics(
                 "active": s.active,
                 "degraded": s.degraded,
                 "updated": _iso(s.updated),
+                "changed": _iso(s.changed),
                 "revisions": c.revisions.get(day, 0),
                 "groups": {g: encode(slots) for g, slots in s.groups.items()},
             }

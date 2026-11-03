@@ -38,7 +38,7 @@ async def test_states_during_an_outage(
     hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
 ) -> None:
     await _real_day(hass, web, freezer)
-    schedule = state(hass, f"{SENSOR}schedule")
+    schedule = state(hass, f"{SENSOR}power_by_schedule")
     assert schedule.state == "off"
     assert schedule.attributes["options"] == ["on", "off", "maybe"]
     assert schedule.attributes["schedule_active"] is True
@@ -46,14 +46,17 @@ async def test_states_during_an_outage(
     assert schedule.attributes["today"][1] == {"start": "17:30", "end": "19:30", "state": "off"}
     assert schedule.attributes["today"][-1] == {"start": "20:00", "end": "24:00", "state": "on"}
     assert schedule.attributes["tomorrow"] is None
-    assert state(hass, "binary_sensor.outage_group_12_scheduled_outage").state == "on"
-    assert state(hass, f"{SENSOR}next_outage").state == "unknown"
-    back = state(hass, f"{SENSOR}power_back")
+    assert state(hass, "binary_sensor.outage_group_12_outage_by_schedule").state == "on"
+    assert state(hass, f"{SENSOR}expected_next_outage").state == "unknown"
+    back = state(hass, f"{SENSOR}expected_power_back")
     assert back.state == "2026-11-03T17:30:00+00:00"
     assert back.attributes["then"] == "maybe"
-    assert state(hass, f"{SENSOR}outage_hours_today").state == "2.0"
+    assert state(hass, f"{SENSOR}scheduled_outage_hours_today").state == "2.0"
     assert state(hass, f"{SENSOR}possible_outage_hours_today").state == "0.5"
-    assert state(hass, f"{SENSOR}schedule_updated").state == "2026-11-03T16:30:00+00:00"
+    # Published by post 3950 at 18:33; the site re-stamps it every 30 minutes.
+    changed = state(hass, f"{SENSOR}schedule_changed_at")
+    assert changed.state == "2026-11-03T16:33:52+00:00"
+    assert changed.attributes["as_of"] == "2026-11-03T18:30:00+02:00"
 
 
 async def test_states_change_at_slot_edges_without_fetching(
@@ -63,9 +66,9 @@ async def test_states_change_at_slot_edges_without_fetching(
     site_calls = web.count(SITE_URL)
     freezer.move_to(kyiv(19, 30))
     await advance(hass, freezer, timedelta(seconds=0))
-    assert state(hass, f"{SENSOR}schedule").state == "maybe"
-    assert state(hass, "binary_sensor.outage_group_12_scheduled_outage").state == "off"
-    assert state(hass, f"{SENSOR}power_back").state == "unknown"
+    assert state(hass, f"{SENSOR}power_by_schedule").state == "maybe"
+    assert state(hass, "binary_sensor.outage_group_12_outage_by_schedule").state == "off"
+    assert state(hass, f"{SENSOR}expected_power_back").state == "unknown"
     assert web.count(SITE_URL) == site_calls
 
 
@@ -75,14 +78,14 @@ async def test_next_outage_and_its_end(
     freezer.move_to(kyiv(10, 0))
     web.set(SITE_URL, site_page(DAY, "09:30", {12: codes(off=(36, 40), maybe=40)}))
     await setup(hass)
-    nxt = state(hass, f"{SENSOR}next_outage")
+    nxt = state(hass, f"{SENSOR}expected_next_outage")
     assert nxt.state == "2026-11-03T16:00:00+00:00"
     assert nxt.attributes == {
         **nxt.attributes,
         "end": kyiv(20, 0).isoformat(),
         "duration_hours": 2.0,
     }
-    assert state(hass, f"{SENSOR}power_back").state == "2026-11-03T18:00:00+00:00"
+    assert state(hass, f"{SENSOR}expected_power_back").state == "2026-11-03T18:00:00+00:00"
 
 
 async def test_outage_running_into_an_unpublished_day_has_no_end(
@@ -91,10 +94,10 @@ async def test_outage_running_into_an_unpublished_day_has_no_end(
     freezer.move_to(kyiv(10, 0))
     web.set(SITE_URL, site_page(DAY, "09:30", {12: codes(off=(44, 48))}))
     await setup(hass)
-    nxt = state(hass, f"{SENSOR}next_outage")
+    nxt = state(hass, f"{SENSOR}expected_next_outage")
     assert nxt.state == "2026-11-03T20:00:00+00:00"
     assert nxt.attributes["end"] is None and nxt.attributes["duration_hours"] is None
-    assert state(hass, f"{SENSOR}power_back").state == "unknown"
+    assert state(hass, f"{SENSOR}expected_power_back").state == "unknown"
 
 
 async def test_unknown_day_leaves_states_unknown(
@@ -103,29 +106,30 @@ async def test_unknown_day_leaves_states_unknown(
     await _real_day(hass, web, freezer)
     freezer.move_to(kyiv(0, 10, TOMORROW))
     await advance(hass, freezer, timedelta(seconds=0))
-    for key in ("schedule", "outage_hours_today", "schedule_updated"):
+    for key in ("power_by_schedule", "scheduled_outage_hours_today", "schedule_changed_at"):
         assert state(hass, f"{SENSOR}{key}").state == "unknown"
-    assert state(hass, "binary_sensor.outage_group_12_scheduled_outage").state == "unknown"
-    assert state(hass, f"{SENSOR}outage_hours_today").attributes.get("revisions_today") is None
+    assert state(hass, "binary_sensor.outage_group_12_outage_by_schedule").state == "unknown"
+    hours = state(hass, f"{SENSOR}scheduled_outage_hours_today")
+    assert hours.attributes.get("revisions_today") is None
 
 
 async def test_calendar(hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory) -> None:
     await _real_day(hass, web, freezer)
-    calendar = state(hass, "calendar.outage_group_12_outages")
+    calendar = state(hass, "calendar.outage_group_12_scheduled_outages")
     assert calendar.state == "on"
     assert calendar.attributes["message"] == "Outage"
     result = await hass.services.async_call(
         "calendar",
         "get_events",
         {
-            "entity_id": "calendar.outage_group_12_outages",
+            "entity_id": "calendar.outage_group_12_scheduled_outages",
             "start_date_time": kyiv(0).isoformat(),
             "end_date_time": kyiv(23, 59).isoformat(),
         },
         blocking=True,
         return_response=True,
     )
-    events = result["calendar.outage_group_12_outages"]["events"]
+    events = result["calendar.outage_group_12_scheduled_outages"]["events"]
     assert [(e["summary"], e["start"][11:16], e["end"][11:16]) for e in events] == [
         ("Outage", "17:30", "19:30"),
         ("Possible outage", "19:30", "20:00"),
@@ -150,7 +154,7 @@ async def test_changing_groups_adds_and_removes_devices(
     devices = dr.async_get(hass)
     hass.config_entries.async_update_entry(entry, options={CONF_GROUPS: [1, 12]})
     await hass.async_block_till_done()
-    assert state(hass, "sensor.outage_group_1_schedule").state == "on"
+    assert state(hass, "sensor.outage_group_1_power_by_schedule").state == "on"
     assert devices.async_get_device({device_identifier(1)})
 
     hass.config_entries.async_update_entry(entry, options={CONF_GROUPS: [1]})

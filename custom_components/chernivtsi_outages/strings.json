@@ -63,12 +63,12 @@
   "entity": {
     "binary_sensor": {
       "outage": {
-        "name": "Scheduled outage"
+        "name": "Outage by schedule"
       }
     },
     "calendar": {
       "outages": {
-        "name": "Outages"
+        "name": "Scheduled outages"
       }
     },
     "event": {
@@ -92,7 +92,7 @@
     },
     "sensor": {
       "schedule": {
-        "name": "Schedule",
+        "name": "Power by schedule",
         "state": {
           "on": "Power on",
           "off": "Outage",
@@ -100,19 +100,19 @@
         }
       },
       "next_outage": {
-        "name": "Next outage"
+        "name": "Expected next outage"
       },
       "power_back": {
-        "name": "Power back"
+        "name": "Expected power back"
       },
       "outage_hours": {
-        "name": "Outage hours today"
+        "name": "Scheduled outage hours today"
       },
       "possible_outage_hours": {
         "name": "Possible outage hours today"
       },
-      "updated": {
-        "name": "Schedule updated"
+      "changed": {
+        "name": "Schedule changed at"
       }
     }
   },

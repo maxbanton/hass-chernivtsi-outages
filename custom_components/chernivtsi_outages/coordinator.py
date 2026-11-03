@@ -115,7 +115,7 @@ class OutageCoordinator(DataUpdateCoordinator[dict[date, DaySchedule]]):
         stored = await self._store.async_load() or {}
         for iso, raw in stored.get("days", {}).items():
             day = date.fromisoformat(iso)
-            updated = raw.get("updated")
+            updated, changed = raw.get("updated"), raw.get("changed")
             self.days[day] = DaySchedule(
                 day,
                 {int(g): decode(code) for g, code in raw["groups"].items()},
@@ -123,6 +123,7 @@ class OutageCoordinator(DataUpdateCoordinator[dict[date, DaySchedule]]):
                 raw["source"],
                 datetime.fromisoformat(updated) if updated else None,
                 raw.get("degraded", False),
+                datetime.fromisoformat(changed) if changed else None,
             )
         for iso, groups in stored.get("frozen", {}).items():
             self.frozen[date.fromisoformat(iso)] = {
@@ -148,6 +149,7 @@ class OutageCoordinator(DataUpdateCoordinator[dict[date, DaySchedule]]):
                     "source": schedule.source,
                     "updated": schedule.updated.isoformat() if schedule.updated else None,
                     "degraded": schedule.degraded,
+                    "changed": schedule.changed.isoformat() if schedule.changed else None,
                 }
                 for day, schedule in self.days.items()
             },
@@ -343,12 +345,33 @@ class OutageCoordinator(DataUpdateCoordinator[dict[date, DaySchedule]]):
                     known[i] or slots[i] if i < missing else slots[i] for i in range(SLOTS)
                 )
         changed = old is None or any(old.groups[g] != schedule.groups[g] for g in GROUPS)
+        if not changed and old.changed is not None:
+            schedule.changed = old.changed
+        elif schedule.changed is None:
+            schedule.changed = self._published_at(schedule, now)
         if changed:
             self._announce(old, schedule, now)
         if old is not None and changed:
             self.revisions[day] = self.revisions.get(day, 0) + 1
         self.first.setdefault(day, {g: schedule.groups[g] for g in GROUPS})
         self.days[day] = schedule
+
+    def _published_at(self, schedule: DaySchedule, now: datetime) -> datetime:
+        """When this version was published: the latest post announcing it, if any.
+
+        Posts list only powered hours, so a post matches on those. Without one,
+        the site's own time for the fetch that first showed it.
+        """
+        for post in reversed(self.posts):
+            if post.day != schedule.day:
+                continue
+            if not post.outages and not schedule.active:
+                return post.posted
+            if post.groups is not None and all(
+                _powered(post.groups[g]) == _powered(schedule.groups[g]) for g in GROUPS
+            ):
+                return post.posted
+        return schedule.updated or now
 
     def _frozen_row(self, day: date, group: int) -> list[Slot | None]:
         return self.frozen.get(day, {}).get(group, [None] * SLOTS)

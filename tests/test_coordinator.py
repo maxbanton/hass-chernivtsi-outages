@@ -163,12 +163,12 @@ async def test_missing_table_after_a_day_with_outages_is_unknown(
     await advance(hass, freezer, timedelta(hours=1, minutes=1))
     assert web.count(SITE_URL) == 2
     assert TOMORROW not in c.days
-    assert hass.states.get("sensor.outage_group_12_schedule").state == "unknown"
+    assert hass.states.get("sensor.outage_group_12_power_by_schedule").state == "unknown"
 
     web.set(TELEGRAM_URL, channel((200, 0, 55, TOMORROW, None)))
     await advance(hass, freezer)
     assert c.days[TOMORROW].active is False
-    assert hass.states.get("sensor.outage_group_12_schedule").state == "on"
+    assert hass.states.get("sensor.outage_group_12_power_by_schedule").state == "on"
 
 
 async def test_site_failures_back_off_and_the_channel_fills_in(
@@ -262,7 +262,7 @@ async def test_passed_slots_keep_their_hours(
     web.set(SITE_URL, site_page(DAY, "13:00", morning))
     web.set(TELEGRAM_URL, channel((100, 9, 0, DAY, morning)))
     await setup(hass)
-    hours = "sensor.outage_group_12_outage_hours_today"
+    hours = "sensor.outage_group_12_scheduled_outage_hours_today"
     assert hass.states.get(hours).state == "2.0"
 
     web.set(SITE_URL, site_page(DAY, "13:05", {12: codes(off=(36, 38))}))
@@ -358,3 +358,51 @@ async def test_an_unconfirmed_post_is_dropped_at_midnight(
     assert web.count(SITE_URL) == 2
     await advance(hass, freezer, timedelta(minutes=10))
     assert web.count(SITE_URL) == 2
+
+
+async def test_changed_at_follows_content_not_the_site_stamp(
+    hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
+) -> None:
+    freezer.move_to(kyiv(18, 49))
+    web.set(SITE_URL, site_page(DAY, "18:30", A))
+    web.set(TELEGRAM_URL, channel((100, 18, 20, DAY, A)))
+    entry = await setup(hass)
+    c: OutageCoordinator = entry.runtime_data
+    assert c.days[DAY].changed == kyiv(18, 20)
+
+    # Re-stamped without changes: same version.
+    web.set(SITE_URL, site_page(DAY, "19:30", A))
+    await advance(hass, freezer, timedelta(hours=1, minutes=1))
+    assert c.days[DAY].updated == kyiv(19, 30)
+    assert c.days[DAY].changed == kyiv(18, 20)
+
+    # A revision announced by a post takes the post's time.
+    web.set(SITE_URL, site_page(DAY, "20:00", B))
+    web.set(TELEGRAM_URL, channel((100, 18, 20, DAY, A), (101, 19, 55, DAY, B)))
+    await advance(hass, freezer)
+    assert c.days[DAY].changed == kyiv(19, 55)
+
+    # A revision no post describes takes the site's time.
+    web.set(SITE_URL, site_page(DAY, "21:00", {12: codes(off=(42, 46))}))
+    await advance(hass, freezer, timedelta(hours=1, minutes=1))
+    assert c.days[DAY].changed == kyiv(21, 0)
+
+
+async def test_changed_at_of_a_quiet_day_is_its_post(
+    hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
+) -> None:
+    freezer.move_to(kyiv(10, 0))
+    web.set(SITE_URL, empty_site_page())
+    web.set(TELEGRAM_URL, channel((300, 9, 0, DAY, None), (301, 9, 5, TOMORROW, A)))
+    entry = await setup(hass)
+    assert entry.runtime_data.days[DAY].changed == kyiv(9, 0)
+    assert entry.runtime_data.days[TOMORROW].changed == kyiv(9, 5)
+
+
+async def test_changed_at_falls_back_to_the_fetch_time(
+    hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
+) -> None:
+    freezer.move_to(kyiv(10, 0))
+    web.set(SITE_URL, site_page(DAY, "09:30", A).replace("станом на", "на"))
+    entry = await setup(hass)
+    assert entry.runtime_data.days[DAY].changed == kyiv(10, 0)

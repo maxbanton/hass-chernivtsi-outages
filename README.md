@@ -50,15 +50,19 @@ One device per outage group, with these entities:
 
 | Entity | Example | Description |
 |---|---|---|
-| Schedule | `sensor.outage_group_12_schedule` | `on`, `off` or `maybe` right now. Attributes `today` and `tomorrow` hold the day's periods. |
-| Scheduled outage | `binary_sensor.outage_group_12_scheduled_outage` | On during a scheduled outage. |
-| Next outage | `sensor.outage_group_12_next_outage` | Start of the next outage that has not begun yet. Attributes: `end`, `duration_hours`. |
-| Power back | `sensor.outage_group_12_power_back` | End of the current outage, or of the next one. Attribute `then` says whether `on` or `maybe` follows. |
-| Outage hours today | `sensor.outage_group_12_outage_hours_today` | Scheduled outage hours today. |
+| Power by schedule | `sensor.outage_group_12_power_by_schedule` | `on`, `off` or `maybe` right now, as scheduled. Attributes `today` and `tomorrow` hold the day's periods. |
+| Outage by schedule | `binary_sensor.outage_group_12_outage_by_schedule` | On during a scheduled outage. |
+| Expected next outage | `sensor.outage_group_12_expected_next_outage` | Start of the next scheduled outage that has not begun yet. Attributes: `end`, `duration_hours`. |
+| Expected power back | `sensor.outage_group_12_expected_power_back` | Scheduled end of the current outage, or of the next one. Attribute `then` says whether `on` or `maybe` follows. |
+| Scheduled outage hours today | `sensor.outage_group_12_scheduled_outage_hours_today` | Scheduled outage hours today. |
 | Possible outage hours today | `sensor.outage_group_12_possible_outage_hours_today` | Possible outage hours today. |
-| Schedule updated | `sensor.outage_group_12_schedule_updated` | The time the publisher says the schedule is current as of (diagnostic). |
-| Outages | `calendar.outage_group_12_outages` | Outages and possible outages, today and tomorrow. |
+| Schedule changed at | `sensor.outage_group_12_schedule_changed_at` | When the current version of today's schedule was published (diagnostic). Attribute `as_of` is the site's "as of" time, which moves every 30 minutes even without changes. |
+| Scheduled outages | `calendar.outage_group_12_scheduled_outages` | Outages and possible outages, today and tomorrow. |
 | Schedule change | `event.outage_group_12_schedule_change` | Fires when the schedule changes, see below. |
+
+All of these describe the published schedule, not the actual state of the grid:
+emergency outages and delays happen. Use your own grid sensor for what really
+happens.
 
 States change exactly at :00 and :30. Times that depend on a day that is not
 published yet are `unknown`: an outage running to midnight has no known end
@@ -110,7 +114,7 @@ frequent changes.
 
 If the site is down, the hours listed in the channel are used. The channel
 lists only the hours with power, so in that case every other half hour is shown
-as an outage, and the Schedule sensor has `degraded: true`. Assuming an outage
+as an outage, and the Power by schedule sensor has `degraded: true`. Assuming an outage
 is the safer mistake.
 
 When the site shows no schedule at all, there are no outages. Right after a
@@ -144,7 +148,7 @@ card picker (**Chernivtsi Power Outages**) or in YAML:
 
 ```yaml
 type: custom:chernivtsi-outages-card
-entity: sensor.outage_group_12_schedule
+entity: sensor.outage_group_12_power_by_schedule
 ```
 
 It shows today and tomorrow as 48 half hour cells, a marker at the current
@@ -162,13 +166,13 @@ automation:
     triggers:
       - trigger: time
         at:
-          entity_id: sensor.outage_group_12_next_outage
+          entity_id: sensor.outage_group_12_expected_next_outage
           offset: "-00:30:00"
     actions:
       - action: notify.notify
         data:
           message: >-
-            Outage at {{ as_timestamp(states('sensor.outage_group_12_next_outage'))
+            Outage at {{ as_timestamp(states('sensor.outage_group_12_expected_next_outage'))
             | timestamp_custom('%H:%M') }}
 ```
 

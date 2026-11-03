@@ -72,9 +72,12 @@ class DaySchedule:
     # False when the publisher says there are no outages that day.
     active: bool = True
     source: str = SOURCE_SITE
-    # The time the publisher says the schedule is current as of.
+    # The time the publisher says the schedule is current as of. The site moves
+    # it every 30 minutes whether or not anything changed.
     updated: datetime | None = None
     degraded: bool = False
+    # When this version of the schedule was published.
+    changed: datetime | None = None
 
     @classmethod
     def quiet(cls, day: date, groups: Iterable[int], source: str = SOURCE_SITE) -> DaySchedule:
