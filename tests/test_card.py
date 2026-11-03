@@ -54,6 +54,9 @@ async def test_card_files_are_served(hass: HomeAssistant, resources) -> None:
     (paths,), _ = register.call_args
     assert paths[0].url_path == f"/{DOMAIN}/frontend"
     assert (FRONTEND_PATH / "chernivtsi-outages-card.js").is_file()
+    assert (FRONTEND_PATH / "outages-card-logic.js").is_file()
+    card = (FRONTEND_PATH / "chernivtsi-outages-card.js").read_text()
+    assert "`./outages-card-logic.js${new URL(import.meta.url).search}`" in card
 
 
 async def test_card_is_added_to_the_dashboard_resources(hass: HomeAssistant, resources) -> None:

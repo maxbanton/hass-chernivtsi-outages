@@ -1,6 +1,12 @@
 // Chernivtsi Power Outages: today's and tomorrow's schedule of one outage group.
 // Reads the Schedule now sensor's `today` / `tomorrow` attributes, and the time of
-// the last change from the Schedule changed at sensor of the same group.
+// the last change from the Schedule changed at sensor of the same group. The rules
+// live in outages-card-logic.js, loaded with this file's version query so an update
+// never pairs this card with a cached old copy.
+
+const { changedWhen, formatClock, kyivMinutes, minutes, nextEvent, outageMarks, overnight } = await import(
+  `./outages-card-logic.js${new URL(import.meta.url).search}`
+);
 
 const TEXT = {
   en: {
@@ -61,15 +67,6 @@ const ICONS = {
   off: "M17,10H13L17,2H7V4.18L15.46,12.64M3.27,3L2,4.27L7,9.27V13H10V22L13.58,15.86L17.73,20L19,18.73L3.27,3Z",
   maybe: "M5,2V13H8V22L15,10H11L15,2M17,15H19V17H17V15M17,7H19V13H17V7Z",
 };
-
-const KYIV_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" });
-
-const KYIV = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Europe/Kyiv",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
 
 const STYLE = `
   :host {
@@ -203,16 +200,6 @@ function text(hass) {
   return TEXT[lang] || TEXT.en;
 }
 
-function minutes(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function hhmm(total) {
-  const m = ((total % 1440) + 1440) % 1440;
-  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-}
-
 function uses12h(hass) {
   const format = hass?.locale?.time_format;
   if (format === "12") return true;
@@ -222,9 +209,7 @@ function uses12h(hass) {
 }
 
 function formatTime(hass, value) {
-  const [h, m] = (value === "24:00" ? "00:00" : value).split(":").map(Number);
-  if (!uses12h(hass)) return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+  return formatClock(value, uses12h(hass));
 }
 
 function formatHour(hass, hour) {
@@ -259,14 +244,6 @@ function fitMarks(row) {
   }
 }
 
-// Minutes of outage touching midnight: at the start of `periods` when `first`, else at the end.
-function overnight(periods, first) {
-  if (!Array.isArray(periods) || !periods.length) return 0;
-  const p = first ? periods[0] : periods[periods.length - 1];
-  if (p.state !== "off" || (first ? p.start !== "00:00" : p.end !== "24:00")) return 0;
-  return minutes(p.end) - minutes(p.start);
-}
-
 function isSchedule(state) {
   return state && Array.isArray(state.attributes.today) && "schedule_active" in state.attributes;
 }
@@ -296,12 +273,19 @@ class ChernivtsiOutagesCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     const state = hass.states[this._config?.entity];
-    // Redraw when the sensor or the locale changes, and once a minute for the now marker.
+    // Rebuild when the schedule, its change time or the locale changes; once a minute
+    // only the time marker and the texts that depend on the time move.
     const changed = hass.states[this._changedId()]?.state;
-    const key = [state?.last_updated, changed, Math.floor(Date.now() / 60000), hass.locale?.language, hass.locale?.time_format].join("|");
-    if (key === this._key) return;
-    this._key = key;
-    this._render();
+    const key = [state?.last_updated, changed, hass.locale?.language, hass.locale?.time_format].join("|");
+    const minute = Math.floor(Date.now() / 60000);
+    if (key !== this._key) {
+      this._key = key;
+      this._minute = minute;
+      this._render();
+    } else if (minute !== this._minute) {
+      this._minute = minute;
+      this._tick();
+    }
   }
 
   getCardSize() {
@@ -321,15 +305,8 @@ class ChernivtsiOutagesCard extends HTMLElement {
   }
 
   _changedText(t) {
-    const value = this._hass.states[this._changedId()]?.state;
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) return null;
-    const day = KYIV_DAY.format(date);
-    const today = KYIV_DAY.format(new Date());
-    const yesterday = KYIV_DAY.format(new Date(Date.now() - 86400000));
-    const at = formatTime(this._hass, KYIV.format(date));
-    const when = day === today ? "today" : day === yesterday ? "yesterday" : `${day.slice(8, 10)}.${day.slice(5, 7)}`;
-    return t.changed(when, at);
+    const changed = changedWhen(this._hass.states[this._changedId()]?.state);
+    return changed ? t.changed(changed.when, formatTime(this._hass, changed.time)) : null;
   }
 
   _moreInfo() {
@@ -352,31 +329,28 @@ class ChernivtsiOutagesCard extends HTMLElement {
     }
     bar.append(segments);
     if (now !== null) {
-      bar.append(el("div", { class: "past", style: { width: `${(now / 1440) * 100}%` } }));
-      bar.append(el("div", { class: "now", style: { left: `${(now / 1440) * 100}%` } }));
+      this._live.past = el("div", { class: "past", style: { width: `${(now / 1440) * 100}%` } });
+      this._live.now = el("div", { class: "now", style: { left: `${(now / 1440) * 100}%` } });
+      bar.append(this._live.past, this._live.now);
     }
     return bar;
   }
 
   // `carry` is the length of the same outage on the other side of midnight, so both halves show its full length.
   _marks(periods, now, t, carry) {
-    const outages = periods.filter((p) => p.state === "off");
-    if (!outages.length) return null;
-    return el(
-      "div",
-      { class: "marks" },
-      outages.map((p) => {
-        const start = minutes(p.start);
-        const end = minutes(p.end);
-        const extra = (start === 0 ? carry.before : 0) + (end === 1440 ? carry.after : 0);
-        return el("span", {
-          class: now !== null && end <= now ? "done" : "",
-          "data-mid": String((start + end) / 2 / 1440),
-          style: { left: `${((start + end) / 2 / 1440) * 100}%` },
-          text: t.hours(formatHours(this._hass, (end - start + extra) / 60)),
-        });
+    const marks = outageMarks(periods, now, carry);
+    if (!marks.length) return null;
+    const spans = marks.map((m) =>
+      el("span", {
+        class: m.done ? "done" : "",
+        "data-mid": String(m.mid),
+        "data-end": String(m.end),
+        style: { left: `${m.mid * 100}%` },
+        text: t.hours(formatHours(this._hass, m.hours)),
       })
     );
+    if (now !== null) this._live.marks = spans;
+    return el("div", { class: "marks" }, spans);
   }
 
   _day(label, periods, now, t, missing, carry = { before: 0, after: 0 }) {
@@ -407,29 +381,37 @@ class ChernivtsiOutagesCard extends HTMLElement {
   }
 
   _summary(a, now, t) {
-    if (!Array.isArray(a.today)) return t.unknown;
-    if (a.schedule_active === false && !(a.tomorrow || []).some((p) => p.state === "off")) return t.noOutages;
-    const merged = [];
-    [a.today, a.tomorrow || []].forEach((periods, d) =>
-      periods.forEach((p) => {
-        const s = d * 1440 + minutes(p.start);
-        const e = d * 1440 + minutes(p.end);
-        const last = merged[merged.length - 1];
-        if (last && last.state === p.state && last.e === s) last.e = e;
-        else merged.push({ state: p.state, s, e });
-      })
-    );
-    const at = (m) => formatTime(this._hass, hhmm(m));
-    const inside = merged.find((p) => p.s <= now && now < p.e);
-    if (inside?.state === "off") {
-      const after = merged.find((p) => p.s === inside.e);
-      return after ? t.powerBack(at(inside.e), after.state === "maybe", inside.e >= 1440) : t.off;
+    const e = nextEvent(a, now);
+    const at = (value) => formatTime(this._hass, value);
+    switch (e.kind) {
+      case "unknown":
+        return t.unknown;
+      case "quiet":
+        return t.noOutages;
+      case "off":
+        return t.off;
+      case "back":
+        return t.powerBack(at(e.at), e.maybe, e.tomorrow);
+      case "next":
+        return t.nextOutage(at(e.at), e.to ? at(e.to) : null, e.tomorrow);
+      default:
+        return t.noNext;
     }
-    const next = merged.find((p) => p.state === "off" && p.s > now);
-    if (!next) return t.noNext;
-    const ends = merged.some((p) => p.s === next.e);
-    // Minutes from 1440 on are tomorrow's; an outage starting then says so.
-    return t.nextOutage(at(next.s), ends ? at(next.e) : null, next.s >= 1440);
+  }
+
+  // The minute tick: move the time marker and refresh what depends on the time,
+  // without rebuilding the card.
+  _tick() {
+    const live = this._live;
+    const state = this._hass?.states[this._config?.entity];
+    if (!live || !state) return;
+    const t = text(this._hass);
+    const now = kyivMinutes(new Date());
+    if (live.past) live.past.style.width = `${(now / 1440) * 100}%`;
+    if (live.now) live.now.style.left = `${(now / 1440) * 100}%`;
+    for (const mark of live.marks || []) mark.classList.toggle("done", Number(mark.dataset.end) <= now);
+    if (live.summary) live.summary.textContent = this._summary(state.attributes, now, t);
+    if (live.changed) live.changed.textContent = this._changedText(t) || "";
   }
 
   _render() {
@@ -444,7 +426,8 @@ class ChernivtsiOutagesCard extends HTMLElement {
       return;
     }
     const a = state.attributes;
-    const now = minutes(KYIV.format(new Date()));
+    const now = kyivMinutes(new Date());
+    this._live = {};
     const title = this._config.title ?? (a.group ? t.title(a.group) : a.friendly_name);
     const current = this._hass.formatEntityState ? this._hass.formatEntityState(state) : t[state.state] || state.state;
 
@@ -452,7 +435,7 @@ class ChernivtsiOutagesCard extends HTMLElement {
       el("div", { class: `icon ${state.state}` }, [icon(state.state)]),
       el("div", { class: "info" }, [
         el("div", { class: "primary", text: current }),
-        el("div", { class: "secondary", text: this._summary(a, now, t) }),
+        (this._live.summary = el("div", { class: "secondary", text: this._summary(a, now, t) })),
       ]),
     ]);
     tile.addEventListener("click", () => this._moreInfo());
@@ -471,7 +454,7 @@ class ChernivtsiOutagesCard extends HTMLElement {
     const changed = this._changedText(t);
     const legend = el("div", { class: "legend" }, [
       ...["on", "off", "maybe"].map((s) => el("span", {}, [el("i", { class: `seg ${s}` }), document.createTextNode(t[s])])),
-      changed ? el("span", { class: "changed", text: changed }) : null,
+      changed ? (this._live.changed = el("span", { class: "changed", text: changed })) : null,
     ]);
 
     card.append(
