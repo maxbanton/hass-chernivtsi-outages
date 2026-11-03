@@ -10,8 +10,14 @@ const TEXT = {
     notPublished: "Not published yet",
     unknown: "Today's schedule is not published yet",
     noOutages: "No outages scheduled",
-    nextOutage: (from, to) => (to ? `Next outage ${from} to ${to}` : `Next outage from ${from}`),
-    powerBack: (at, maybe) => (maybe ? `Power possibly back at ${at}` : `Power expected back at ${at}`),
+    nextOutage: (from, to, tomorrow) => {
+      const day = tomorrow ? "tomorrow " : "";
+      return to ? `Next outage ${day}${from} to ${to}` : `Next outage ${day}from ${from}`;
+    },
+    powerBack: (at, maybe, tomorrow) => {
+      const day = tomorrow ? "tomorrow " : "";
+      return maybe ? `Power possibly back ${day}at ${at}` : `Power expected back ${day}at ${at}`;
+    },
     noNext: "No more outages scheduled",
     degraded: "From the Telegram channel: possible outages are shown as outages",
     on: "Power on",
@@ -29,8 +35,14 @@ const TEXT = {
     notPublished: "Ще не опубліковано",
     unknown: "Графік на сьогодні ще не опубліковано",
     noOutages: "Відключень не заплановано",
-    nextOutage: (from, to) => (to ? `Наступне відключення з ${from} до ${to}` : `Наступне відключення з ${from}`),
-    powerBack: (at, maybe) => (maybe ? `Світло, можливо, повернеться о ${at}` : `Світло очікується о ${at}`),
+    nextOutage: (from, to, tomorrow) => {
+      const day = tomorrow ? "завтра " : "";
+      return to ? `Наступне відключення ${day}з ${from} до ${to}` : `Наступне відключення ${day}з ${from}`;
+    },
+    powerBack: (at, maybe, tomorrow) => {
+      const day = tomorrow ? "завтра " : "";
+      return maybe ? `Світло, можливо, повернеться ${day}о ${at}` : `Світло очікується ${day}о ${at}`;
+    },
     noNext: "Більше відключень не заплановано",
     degraded: "За даними Telegram-каналу: можливі відключення показано як відключення",
     on: "Є світло",
@@ -411,12 +423,13 @@ class ChernivtsiOutagesCard extends HTMLElement {
     const inside = merged.find((p) => p.s <= now && now < p.e);
     if (inside?.state === "off") {
       const after = merged.find((p) => p.s === inside.e);
-      return after ? t.powerBack(at(inside.e), after.state === "maybe") : t.off;
+      return after ? t.powerBack(at(inside.e), after.state === "maybe", inside.e >= 1440) : t.off;
     }
     const next = merged.find((p) => p.state === "off" && p.s > now);
     if (!next) return t.noNext;
     const ends = merged.some((p) => p.s === next.e);
-    return t.nextOutage(at(next.s), ends ? at(next.e) : null);
+    // Minutes from 1440 on are tomorrow's; an outage starting then says so.
+    return t.nextOutage(at(next.s), ends ? at(next.e) : null, next.s >= 1440);
   }
 
   _render() {
