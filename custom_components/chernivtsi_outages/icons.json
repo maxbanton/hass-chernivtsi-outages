@@ -1,0 +1,46 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "outage": {
+        "default": "mdi:transmission-tower-off",
+        "state": {
+          "off": "mdi:transmission-tower"
+        }
+      }
+    },
+    "calendar": {
+      "outages": {
+        "default": "mdi:calendar-clock"
+      }
+    },
+    "event": {
+      "change": {
+        "default": "mdi:calendar-alert"
+      }
+    },
+    "sensor": {
+      "schedule": {
+        "default": "mdi:flash",
+        "state": {
+          "off": "mdi:flash-off",
+          "maybe": "mdi:flash-alert"
+        }
+      },
+      "next_outage": {
+        "default": "mdi:flash-off"
+      },
+      "power_back": {
+        "default": "mdi:flash"
+      },
+      "outage_hours": {
+        "default": "mdi:timer-off-outline"
+      },
+      "possible_outage_hours": {
+        "default": "mdi:timer-alert-outline"
+      },
+      "updated": {
+        "default": "mdi:update"
+      }
+    }
+  }
+}

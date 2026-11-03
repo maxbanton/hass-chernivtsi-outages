@@ -1,160 +1,97 @@
-"""Tests for config flow."""
-import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+"""Config and options flows."""
 
+from __future__ import annotations
+
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType, AbortFlow
+from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.cv_oblenergo.const import DOMAIN, CONF_GROUP
-from custom_components.cv_oblenergo.config_flow import PowerScheduleConfigFlow
+from custom_components.chernivtsi_outages.api import FetchError
+from custom_components.chernivtsi_outages.const import (
+    CONF_GROUPS,
+    DOMAIN,
+    SEARCH_URL,
+    SITE_URL,
+    TELEGRAM_URL,
+)
 
-
-class TestConfigFlow:
-    """Tests for PowerScheduleConfigFlow."""
-    
-    @pytest.mark.asyncio
-    async def test_form_is_shown(self):
-        """Test that the form is shown on init."""
-        flow = PowerScheduleConfigFlow()
-        flow.hass = MagicMock()
-        
-        result = await flow.async_step_user(user_input=None)
-        
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "user"
-        assert "data_schema" in result
-    
-    @pytest.mark.asyncio
-    async def test_form_has_group_selection(self):
-        """Test that the form has group selection."""
-        flow = PowerScheduleConfigFlow()
-        flow.hass = MagicMock()
-        
-        result = await flow.async_step_user(user_input=None)
-        
-        # The form should have a schema with group field
-        schema = result["data_schema"]
-        assert schema is not None
-    
-    @pytest.mark.asyncio
-    async def test_successful_config(self):
-        """Test successful configuration."""
-        flow = PowerScheduleConfigFlow()
-        flow.hass = MagicMock()
-        flow.async_set_unique_id = AsyncMock()
-        flow._abort_if_unique_id_configured = MagicMock()
-        flow.async_create_entry = MagicMock(return_value={"type": FlowResultType.CREATE_ENTRY})
-        
-        with patch(
-            "custom_components.cv_oblenergo.config_flow.validate_connection",
-            return_value=True
-        ):
-            result = await flow.async_step_user(user_input={CONF_GROUP: 12})
-        
-        flow.async_create_entry.assert_called_once()
-        call_args = flow.async_create_entry.call_args
-        assert call_args.kwargs["title"] == "Electricity Group 12"
-        assert call_args.kwargs["data"][CONF_GROUP] == 12
-    
-    @pytest.mark.asyncio
-    async def test_connection_error(self):
-        """Test handling of connection errors."""
-        flow = PowerScheduleConfigFlow()
-        flow.hass = MagicMock()
-        
-        with patch(
-            "custom_components.cv_oblenergo.config_flow.validate_connection",
-            return_value=False
-        ):
-            result = await flow.async_step_user(user_input={CONF_GROUP: 12})
-        
-        assert result["type"] == FlowResultType.FORM
-        assert result["errors"]["base"] == "cannot_connect"
-    
-    @pytest.mark.asyncio
-    async def test_already_configured(self):
-        """Test handling of already configured group."""
-        flow = PowerScheduleConfigFlow()
-        flow.hass = MagicMock()
-        flow.async_set_unique_id = AsyncMock()
-        flow._abort_if_unique_id_configured = MagicMock(
-            side_effect=AbortFlow("already_configured")
-        )
-        
-        with patch(
-            "custom_components.cv_oblenergo.config_flow.validate_connection",
-            return_value=True
-        ):
-            with pytest.raises(AbortFlow):
-                await flow.async_step_user(user_input={CONF_GROUP: 12})
-    
-    @pytest.mark.asyncio
-    async def test_unique_id_format(self):
-        """Test unique ID is set correctly."""
-        flow = PowerScheduleConfigFlow()
-        flow.hass = MagicMock()
-        flow.async_set_unique_id = AsyncMock()
-        flow._abort_if_unique_id_configured = MagicMock()
-        flow.async_create_entry = MagicMock(return_value={"type": FlowResultType.CREATE_ENTRY})
-        
-        with patch(
-            "custom_components.cv_oblenergo.config_flow.validate_connection",
-            return_value=True
-        ):
-            await flow.async_step_user(user_input={CONF_GROUP: 5})
-        
-        flow.async_set_unique_id.assert_called_once_with("cv_oblenergo_group_5")
-    
-    @pytest.mark.asyncio
-    async def test_all_groups_available(self):
-        """Test that all 12 groups are available for selection."""
-        flow = PowerScheduleConfigFlow()
-        flow.hass = MagicMock()
-        
-        result = await flow.async_step_user(user_input=None)
-        
-        # Check that the description placeholders include the URL
-        assert "url" in result.get("description_placeholders", {})
+from .common import kyiv, setup
+from .helpers import FakeWeb, fixture
 
 
-@pytest.mark.asyncio
-async def test_validate_connection_success():
-    """Test validate_connection returns True on success."""
-    from custom_components.cv_oblenergo.config_flow import validate_connection
-    
-    hass = MagicMock()
-    
-    with patch(
-        "custom_components.cv_oblenergo.config_flow.async_get_clientsession"
-    ) as mock_session:
-        mock_client = MagicMock()
-        mock_client.async_get_schedule = AsyncMock(return_value=MagicMock())
-        
-        with patch(
-            "custom_components.cv_oblenergo.config_flow.PowerScheduleApiClient",
-            return_value=mock_client
-        ):
-            result = await validate_connection(hass)
-            assert result is True
+async def _start(hass: HomeAssistant):
+    return await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_USER}
+    )
 
 
-@pytest.mark.asyncio
-async def test_validate_connection_failure():
-    """Test validate_connection returns False on failure."""
-    from custom_components.cv_oblenergo.config_flow import validate_connection
-    
-    hass = MagicMock()
-    
-    with patch(
-        "custom_components.cv_oblenergo.config_flow.async_get_clientsession"
-    ) as mock_session:
-        mock_client = MagicMock()
-        mock_client.async_get_schedule = AsyncMock(side_effect=Exception("Connection failed"))
-        
-        with patch(
-            "custom_components.cv_oblenergo.config_flow.PowerScheduleApiClient",
-            return_value=mock_client
-        ):
-            result = await validate_connection(hass)
-            assert result is False
+async def test_user_flow(hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory) -> None:
+    freezer.move_to(kyiv(18, 49))
+    web.set(SITE_URL, fixture("site_schedule.html"))
+    result = await _start(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["description_placeholders"] == {"search_url": SEARCH_URL}
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_GROUPS: ["12", "3"]}
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Chernivtsi Power Outages"
+    assert result["data"] == {CONF_GROUPS: [3, 12]}
+
+
+async def test_user_flow_needs_a_group(hass: HomeAssistant, web: FakeWeb) -> None:
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_GROUPS: []})
+    assert result["errors"] == {CONF_GROUPS: "no_groups"}
+
+
+async def test_user_flow_works_with_only_the_channel(hass: HomeAssistant, web: FakeWeb) -> None:
+    web.set(SITE_URL, FetchError("down"))
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_GROUPS: ["1"]})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_user_flow_cannot_connect(hass: HomeAssistant, web: FakeWeb) -> None:
+    web.set(SITE_URL, FetchError("down"))
+    web.set(TELEGRAM_URL, FetchError("down"))
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_GROUPS: ["1"]})
+    assert result["errors"] == {"base": "cannot_connect"}
+
+    web.set(SITE_URL, fixture("site_schedule.html"))
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_GROUPS: ["1"]})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_single_entry(
+    hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
+) -> None:
+    freezer.move_to(kyiv(18, 49))
+    web.set(SITE_URL, fixture("site_schedule.html"))
+    await setup(hass)
+    result = await _start(hass)
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "single_instance_allowed"
+
+
+async def test_options_flow(
+    hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
+) -> None:
+    freezer.move_to(kyiv(18, 49))
+    web.set(SITE_URL, fixture("site_schedule.html"))
+    entry = await setup(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {CONF_GROUPS: []})
+    assert result["errors"] == {CONF_GROUPS: "no_groups"}
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_GROUPS: ["5", "12"]}
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options == {CONF_GROUPS: [5, 12]}
+    assert entry.runtime_data.groups == [5, 12]

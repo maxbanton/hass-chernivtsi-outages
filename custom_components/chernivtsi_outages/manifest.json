@@ -1,0 +1,14 @@
+{
+  "domain": "chernivtsi_outages",
+  "name": "Chernivtsi Power Outages",
+  "after_dependencies": ["frontend", "http", "lovelace"],
+  "codeowners": ["@maxbanton"],
+  "config_flow": true,
+  "documentation": "https://github.com/maxbanton/hass-chernivtsi-outages",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/maxbanton/hass-chernivtsi-outages/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "1.0.0"
+}

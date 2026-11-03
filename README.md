@@ -1,171 +1,221 @@
-# Графік відключень електроенергії Чернівецької області
+# Chernivtsi Power Outages for Home Assistant
 
-[![CI](https://github.com/maxbanton/ha-cv-power-outages/actions/workflows/ci.yml/badge.svg)](https://github.com/maxbanton/ha-cv-power-outages/actions/workflows/ci.yml)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![Tests](https://github.com/maxbanton/hass-chernivtsi-outages/actions/workflows/tests.yml/badge.svg)](https://github.com/maxbanton/hass-chernivtsi-outages/actions/workflows/tests.yml)
+[![Validate](https://github.com/maxbanton/hass-chernivtsi-outages/actions/workflows/validate.yml/badge.svg)](https://github.com/maxbanton/hass-chernivtsi-outages/actions/workflows/validate.yml)
+[![License](https://img.shields.io/github/license/maxbanton/hass-chernivtsi-outages)](LICENSE)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12%2B-41BDF5.svg)](https://www.home-assistant.io)
 
-> **НЕОФІЦІЙНА ІНТЕГРАЦІЯ** - Це громадський проект, який НЕ пов'язаний з енергетичною компанією. Використовуйте на власний ризик.
+Scheduled power outages of the Chernivtsi region (Bukovyna, Ukraine) in Home
+Assistant: the current state of your outage group, the next outage, when power
+comes back, a calendar, events when the schedule changes, and a dashboard card.
 
-Інтеграція для Home Assistant, яка показує графік відключень електроенергії для Чернівецької області. Дані отримуються з публічно доступної інформації.
+[Українською](README.uk.md)
 
-## Можливості
+> **Unofficial.** This project is not affiliated with or endorsed by
+> JSC "Chernivtsioblenergo". It reads the schedule they publish on
+> [oblenergo.cv.ua](https://oblenergo.cv.ua/shutdowns/) and their
+> [Telegram channel](https://t.me/oe_cv_ua). Emergency outages happen regardless
+> of any schedule.
 
-- **Поточний стан** - Показує чи є зараз світло (on/off)
-- **Наступне включення** - Час коли світло включать
-- **Наступне відключення** - Час коли світло виключать
+## What it is for
 
-> Стан "можливо є" (maybe) вважається як "є світло" (on)
+The schedule changes several times a day, outages get moved earlier or later,
+and tomorrow's schedule often appears late in the evening. With the schedule in
+Home Assistant you can:
 
-## Встановлення
+- charge a home battery from the grid before an outage starts, and plan again
+  every time the schedule changes;
+- check that the battery holds enough energy for the coming outage, and shed
+  load early if it does not;
+- run the boiler, washer or heating in the hours when power is guaranteed;
+- get a notification before an outage and when the schedule changes;
+- compare scheduled outage hours with what actually happened.
 
-### HACS (Рекомендовано)
+## The three states
 
-1. Відкрийте HACS в Home Assistant
-2. Натисніть "Integrations"
-3. Натисніть меню (три крапки) → "Custom repositories"
-4. Додайте URL цього репозиторію, виберіть категорію "Integration"
-5. Натисніть "Add"
-6. Знайдіть "Chernivtsi Power Schedule" та встановіть
-7. Перезапустіть Home Assistant
+Every half hour of the schedule is one of:
 
-### Ручне встановлення
+| State | On the site | Meaning |
+|---|---|---|
+| `on` | green, "з" | power is on |
+| `off` | red, "в" | scheduled outage |
+| `maybe` | grey, "мз" | possible outage, power may or may not be on |
 
-1. Завантажте папку `custom_components/cv_oblenergo` з цього репозиторію
-2. Скопіюйте її в директорію `custom_components` вашого Home Assistant
-3. Перезапустіть Home Assistant
-
-## Налаштування
-
-1. Перейдіть в **Settings** → **Devices & Services**
-2. Натисніть **+ Add Integration**
-3. Знайдіть "Chernivtsi Power Schedule"
-4. Виберіть номер вашої групи (1-12)
-
-### Як дізнатися номер групи
-
-Відвідайте [oblenergo.cv.ua/shutdowns-search](https://oblenergo.cv.ua/shutdowns-search/) для пошуку вашої групи:
-1. Виберіть дільницю
-2. Введіть населений пункт
-3. Введіть вулицю
-4. Введіть номер будинку
-
-Результати пошуку покажуть номер вашої групи.
-
-## Сутності (Entities)
-
-| Сутність | Тип | Опис |
-|----------|-----|------|
-| `sensor.cv_power_state` | Sensor | Поточний стан: `on` або `off` |
-| `sensor.cv_power_next_on` | Sensor | Час наступного включення |
-| `sensor.cv_power_next_off` | Sensor | Час наступного відключення |
-
-### Атрибути сенсора стану
-
-Сенсор `sensor.cv_power_state` має додаткові атрибути:
-
-| Атрибут | Опис |
-|---------|------|
-| `schedule_date` | Дата графіку (YYYY-MM-DD) |
-| `group` | Номер групи |
-| `hours_with_power` | Заплановано годин зі світлом |
-| `hours_without_power` | Заплановано годин без світла |
-
-## Застереження
-
-**ЦЕ НЕОФІЦІЙНА ІНТЕГРАЦІЯ.**
-
-- Цей проект НЕ пов'язаний з енергетичною компанією
-- Дані графіку отримуються з публічних джерел і можуть змінюватися
-- Інтеграція надається "як є" без гарантій
-- Завжди перевіряйте критичну інформацію на офіційних джерелах
-
----
-
-# Chernivtsi Power Schedule - Home Assistant Integration
-
-[English version]
-
-> **UNOFFICIAL INTEGRATION** - This is a community project and is NOT affiliated with any electricity company. Use at your own risk.
-
-Home Assistant integration for power outage schedule in Chernivtsi region, Ukraine.
-
-## Features
-
-- **Current state** - Shows if electricity is currently on or off
-- **Next ON time** - When power will be turned on
-- **Next OFF time** - When power will be turned off
-
-> "Maybe" state is treated as "on"
-
-## Installation
-
-### HACS (Recommended)
-
-1. Open HACS in Home Assistant
-2. Click on "Integrations"
-3. Click the three dots menu and select "Custom repositories"
-4. Add this repository URL and select "Integration" as the category
-5. Click "Add"
-6. Search for "Chernivtsi Power Schedule" and install it
-7. Restart Home Assistant
-
-### Manual Installation
-
-1. Download the `custom_components/cv_oblenergo` folder from this repository
-2. Copy it to your Home Assistant's `custom_components` directory
-3. Restart Home Assistant
-
-## Configuration
-
-1. Go to **Settings** → **Devices & Services**
-2. Click **+ Add Integration**
-3. Search for "Chernivtsi Power Schedule"
-4. Select your group number (1-12)
-
-### Finding Your Group Number
-
-Visit [oblenergo.cv.ua/shutdowns-search](https://oblenergo.cv.ua/shutdowns-search/) to find your group by address.
+The integration keeps the three apart everywhere. A possible outage is never
+counted as power on, and never as an outage.
 
 ## Entities
 
-| Entity | Type | Description |
-|--------|------|-------------|
-| `sensor.cv_power_state` | Sensor | Current state: `on` or `off` |
-| `sensor.cv_power_next_on` | Sensor | Timestamp of next power ON |
-| `sensor.cv_power_next_off` | Sensor | Timestamp of next power OFF |
+One device per outage group, with these entities:
 
-### State Sensor Attributes
+| Entity | Example | Description |
+|---|---|---|
+| Schedule | `sensor.outage_group_12_schedule` | `on`, `off` or `maybe` right now. Attributes `today` and `tomorrow` hold the day's periods. |
+| Scheduled outage | `binary_sensor.outage_group_12_scheduled_outage` | On during a scheduled outage. |
+| Next outage | `sensor.outage_group_12_next_outage` | Start of the next outage that has not begun yet. Attributes: `end`, `duration_hours`. |
+| Power back | `sensor.outage_group_12_power_back` | End of the current outage, or of the next one. Attribute `then` says whether `on` or `maybe` follows. |
+| Outage hours today | `sensor.outage_group_12_outage_hours_today` | Scheduled outage hours today. |
+| Possible outage hours today | `sensor.outage_group_12_possible_outage_hours_today` | Possible outage hours today. |
+| Schedule updated | `sensor.outage_group_12_schedule_updated` | The time the publisher says the schedule is current as of (diagnostic). |
+| Outages | `calendar.outage_group_12_outages` | Outages and possible outages, today and tomorrow. |
+| Schedule change | `event.outage_group_12_schedule_change` | Fires when the schedule changes, see below. |
 
-The `sensor.cv_power_state` sensor has additional attributes:
+States change exactly at :00 and :30. Times that depend on a day that is not
+published yet are `unknown`: an outage running to midnight has no known end
+until tomorrow's schedule is out.
 
-| Attribute | Description |
-|-----------|-------------|
-| `schedule_date` | Schedule date (YYYY-MM-DD) |
-| `group` | Group number |
-| `hours_with_power` | Planned hours with electricity |
-| `hours_without_power` | Planned hours without electricity |
+The hours sensors count each half hour as it was scheduled when it passed, so a
+later revision does not rewrite the past. Their attributes show
+`revisions_today` and `originally_scheduled_hours`, the first version of the
+day.
 
-## Development
+### Schedule change events
 
-### Running Tests
+The event entity fires one of these types, with `date` and a `changes` list
+(`type`, `start`, `end`, `old_start`, `old_end`):
 
-```bash
-pip install -r requirements_test.txt
-pytest tests/ -v
+| Event type | When |
+|---|---|
+| `schedule_published` | a schedule for a new day appeared |
+| `outage_earlier` | an outage now starts earlier |
+| `outage_added` | a new outage |
+| `outage_longer` | an outage now ends later |
+| `outage_later` | an outage now starts later |
+| `outage_shorter` | an outage now ends earlier |
+| `outage_removed` | an outage was cancelled |
+| `schedule_changed` | anything else changed, such as possible outage hours |
+
+When several things change at once, the most urgent type is reported and the
+`changes` list has all of them. Nothing fires on Home Assistant start, so
+automations that plan around outages should also run at start.
+
+## Where the data comes from, and how often
+
+The schedule page on oblenergo.cv.ua is the source of truth. It is not cached,
+and every installation of this integration adds to its load, so the
+integration asks as little as it can:
+
+- The oblenergo Telegram channel is read every 5 minutes. That load is on
+  Telegram, not on oblenergo.
+- The site is fetched only when the channel announces a schedule, plus one
+  safety fetch an hour while outages are on, or every 6 hours when there are
+  none. If the channel cannot be read, the site is checked every 30 minutes.
+- One fetch serves all your groups. Half hour boundaries are computed locally.
+- Errors back off exponentially, and `Retry-After` is respected.
+- Requests carry a User-Agent naming this project, so the site's admins can
+  see who is asking and reach the project.
+
+That is about 4 site requests a day without outages, and about 30 on a day with
+frequent changes.
+
+If the site is down, the hours listed in the channel are used. The channel
+lists only the hours with power, so in that case every other half hour is shown
+as an outage, and the Schedule sensor has `degraded: true`. Assuming an outage
+is the safer mistake.
+
+When the site shows no schedule at all, there are no outages. Right after a
+day with outages, though, a missing schedule more likely means "not published
+yet", so today stays `unknown` until a schedule or a "no outages" post appears.
+
+## Installation
+
+### HACS
+
+1. In HACS, open the menu, choose **Custom repositories**, add
+   `https://github.com/maxbanton/hass-chernivtsi-outages` as an **Integration**.
+2. Install **Chernivtsi Power Outages** and restart Home Assistant.
+
+### Manual
+
+Copy `custom_components/chernivtsi_outages` into your `config/custom_components`
+folder and restart Home Assistant.
+
+## Configuration
+
+**Settings > Devices & services > Add integration > Chernivtsi Power Outages**,
+then pick one or more groups. Find your group by address on the
+[oblenergo search page](https://oblenergo.cv.ua/shutdowns-search/). Change the
+groups later in the integration's options.
+
+## Card
+
+The integration ships a dashboard card and loads it for you. Add it from the
+card picker (**Chernivtsi Power Outages**) or in YAML:
+
+```yaml
+type: custom:chernivtsi-outages-card
+entity: sensor.outage_group_12_schedule
 ```
 
-## Disclaimer
+It shows today and tomorrow as 48 half hour cells, a marker at the current
+time, the next outage or when power comes back, and a legend. Outages are also
+hatched and possible outages outlined, so the card does not rely on colour
+alone. `title` overrides the heading.
 
-**THIS IS AN UNOFFICIAL INTEGRATION.**
+## Automation examples
 
-- This project is NOT affiliated with any electricity distribution company
-- The schedule data is sourced from publicly available information and may change without notice
-- This integration is provided "as is" without warranty of any kind
-- Always verify critical information directly from official sources
+Notify 30 minutes before an outage:
+
+```yaml
+automation:
+  - alias: Outage in 30 minutes
+    triggers:
+      - trigger: time
+        at:
+          entity_id: sensor.outage_group_12_next_outage
+          offset: "-00:30:00"
+    actions:
+      - action: notify.notify
+        data:
+          message: >-
+            Outage at {{ as_timestamp(states('sensor.outage_group_12_next_outage'))
+            | timestamp_custom('%H:%M') }}
+```
+
+React to a changed schedule:
+
+```yaml
+automation:
+  - alias: Outage moved earlier
+    triggers:
+      - trigger: state
+        entity_id: event.outage_group_12_schedule_change
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.to_state.attributes.event_type in ['outage_earlier', 'outage_added'] }}"
+    actions:
+      - action: notify.notify
+        data:
+          message: "Outage schedule changed: {{ trigger.to_state.attributes.event_type }}"
+```
+
+Compare scheduled with actual outage hours, using your own sensor for grid
+presence:
+
+```yaml
+sensor:
+  - platform: history_stats
+    name: Actual outage hours today
+    entity_id: binary_sensor.grid_power
+    state: "off"
+    type: time
+    start: "{{ today_at() }}"
+    end: "{{ now() }}"
+```
+
+## Troubleshooting
+
+- **Diagnostics:** the integration's menu has **Download diagnostics**, with
+  what each source returned and when the site was last fetched.
+- **Repairs:** if the site's or the channel's page layout changes, a repair
+  issue appears. Please open an issue in this repository.
+
+## Removal
+
+Delete the integration under **Settings > Devices & services**. The card's
+dashboard resource and the stored schedule are removed with it. Then remove the
+files, or uninstall it in HACS.
 
 ## License
 
-MIT License
-
-## Support
-
-If you find this integration useful, please star the repository!
+MIT

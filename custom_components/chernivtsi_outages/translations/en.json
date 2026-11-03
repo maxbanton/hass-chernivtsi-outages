@@ -1,0 +1,134 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Chernivtsi Power Outages",
+        "description": "Pick the outage groups to follow. Find yours by address on the [oblenergo search page]({search_url}).\n\nUnofficial integration, not affiliated with Chernivtsioblenergo.",
+        "data": {
+          "groups": "Groups"
+        },
+        "data_description": {
+          "groups": "One device with its own entities is created per group."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Neither the oblenergo schedule page nor its Telegram channel could be read. Check the internet connection and try again.",
+      "no_groups": "Pick at least one group."
+    },
+    "abort": {
+      "single_instance_allowed": "Already set up. Change the groups in the integration's options."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Outage groups",
+        "description": "Pick the outage groups to follow. Find yours by address on the [oblenergo search page]({search_url}).\n\nUnofficial integration, not affiliated with Chernivtsioblenergo.",
+        "data": {
+          "groups": "Groups"
+        },
+        "data_description": {
+          "groups": "One device with its own entities is created per group."
+        }
+      }
+    },
+    "error": {
+      "no_groups": "Pick at least one group."
+    }
+  },
+  "selector": {
+    "group": {
+      "options": {
+        "1": "Group 1",
+        "2": "Group 2",
+        "3": "Group 3",
+        "4": "Group 4",
+        "5": "Group 5",
+        "6": "Group 6",
+        "7": "Group 7",
+        "8": "Group 8",
+        "9": "Group 9",
+        "10": "Group 10",
+        "11": "Group 11",
+        "12": "Group 12"
+      }
+    }
+  },
+  "device": {
+    "group": {
+      "name": "Outage group {group}"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "outage": {
+        "name": "Scheduled outage"
+      }
+    },
+    "calendar": {
+      "outages": {
+        "name": "Outages"
+      }
+    },
+    "event": {
+      "change": {
+        "name": "Schedule change",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "schedule_published": "Schedule published",
+              "outage_earlier": "Outage moved earlier",
+              "outage_added": "Outage added",
+              "outage_longer": "Outage extended",
+              "outage_later": "Outage moved later",
+              "outage_shorter": "Outage shortened",
+              "outage_removed": "Outage cancelled",
+              "schedule_changed": "Schedule changed"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "schedule": {
+        "name": "Schedule",
+        "state": {
+          "on": "Power on",
+          "off": "Outage",
+          "maybe": "Possible outage"
+        }
+      },
+      "next_outage": {
+        "name": "Next outage"
+      },
+      "power_back": {
+        "name": "Power back"
+      },
+      "outage_hours": {
+        "name": "Outage hours today"
+      },
+      "possible_outage_hours": {
+        "name": "Possible outage hours today"
+      },
+      "updated": {
+        "name": "Schedule updated"
+      }
+    }
+  },
+  "exceptions": {
+    "no_source": {
+      "message": "Neither the oblenergo schedule page nor its Telegram channel could be read."
+    }
+  },
+  "issues": {
+    "site_layout": {
+      "title": "The oblenergo schedule page has changed",
+      "description": "The integration no longer recognizes the schedule page on oblenergo.cv.ua, so the schedule is not updated from it. Meanwhile the oblenergo Telegram channel is used where it lists the hours. Please report this in the project's issues."
+    },
+    "telegram_layout": {
+      "title": "The oblenergo Telegram channel has changed",
+      "description": "The integration no longer recognizes the oblenergo Telegram channel page. The schedule still comes from oblenergo.cv.ua, but the page is checked every 30 minutes, so changes can show up later. Please report this in the project's issues."
+    }
+  }
+}
