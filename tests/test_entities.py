@@ -160,7 +160,8 @@ async def test_changing_groups_adds_and_removes_devices(
     hass.config_entries.async_update_entry(entry, options={CONF_GROUPS: [1]})
     await hass.async_block_till_done()
     assert devices.async_get_device({device_identifier(12)}) is None
-    assert devices.async_get_device({device_identifier(1)})
+    device = devices.async_get_device({device_identifier(1)})
+    assert device.configuration_url == "https://oblenergo.cv.ua/shutdowns/"
 
 
 async def test_unload_and_remove(

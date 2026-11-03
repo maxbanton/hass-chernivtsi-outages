@@ -7,7 +7,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, SEARCH_URL
+from .const import DOMAIN, SITE_URL
 from .coordinator import OutageCoordinator
 from .model import Period, Slot, current
 
@@ -31,7 +31,7 @@ class GroupEntity(CoordinatorEntity[OutageCoordinator]):
             manufacturer="oblenergo.cv.ua",
             model="Outage group",
             entry_type=DeviceEntryType.SERVICE,
-            configuration_url=SEARCH_URL,
+            configuration_url=SITE_URL,
         )
 
     @property
