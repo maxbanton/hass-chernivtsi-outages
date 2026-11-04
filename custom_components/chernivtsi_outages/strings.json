@@ -8,7 +8,7 @@
           "groups": "Groups"
         },
         "data_description": {
-          "groups": "One device with its own entities is created per group."
+          "groups": "Each group gets its own device and entities."
         }
       }
     },
@@ -17,7 +17,7 @@
       "no_groups": "Pick at least one group."
     },
     "abort": {
-      "single_instance_allowed": "Already set up. Change the groups in the integration's options."
+      "single_instance_allowed": "Already set up. To change the groups, select Configure on the integration."
     }
   },
   "options": {
@@ -29,7 +29,7 @@
           "groups": "Groups"
         },
         "data_description": {
-          "groups": "One device with its own entities is created per group."
+          "groups": "Each group gets its own device and entities."
         }
       }
     },
@@ -63,7 +63,7 @@
   "entity": {
     "binary_sensor": {
       "power": {
-        "name": "Power by schedule"
+        "name": "Scheduled power"
       }
     },
     "calendar": {
@@ -103,7 +103,7 @@
         "name": "Expected next outage"
       },
       "power_back": {
-        "name": "Expected power back"
+        "name": "Power expected back"
       },
       "outage_hours": {
         "name": "Scheduled outage hours today"
@@ -112,7 +112,7 @@
         "name": "Possible outage hours today"
       },
       "changed": {
-        "name": "Schedule changed at"
+        "name": "Last schedule change"
       }
     }
   },
@@ -124,11 +124,11 @@
   "issues": {
     "site_layout": {
       "title": "The oblenergo schedule page has changed",
-      "description": "The integration no longer recognizes the schedule page on oblenergo.cv.ua, so the schedule is not updated from it. Until this is fixed, the hours listed in the oblenergo Telegram channel are used. Please open an issue in the project repository."
+      "description": "The integration no longer recognises the schedule page on oblenergo.cv.ua, so the schedule is not updated from it. Until this is fixed, the hours listed in the oblenergo Telegram channel are used. Please open an issue in the project repository."
     },
     "telegram_layout": {
       "title": "The oblenergo Telegram channel has changed",
-      "description": "The integration no longer recognizes the oblenergo Telegram channel page. The schedule still comes from oblenergo.cv.ua, but the site is now checked every 30 minutes, so changes may show up later. Please open an issue in the project repository."
+      "description": "The integration no longer recognises the oblenergo Telegram channel page. The schedule still comes from oblenergo.cv.ua, but the site is now checked every 30 minutes, so changes may show up later. Please open an issue in the project repository."
     }
   }
 }

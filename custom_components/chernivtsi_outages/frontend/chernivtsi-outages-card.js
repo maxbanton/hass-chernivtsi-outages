@@ -1,6 +1,6 @@
 // Chernivtsi Power Outages: today's and tomorrow's schedule of one outage group.
 // Reads the Schedule now sensor's `today` / `tomorrow` attributes, and the time of
-// the last change from the Schedule changed at sensor of the same group. The rules
+// the last change from the Last schedule change sensor of the same group. The rules
 // live in outages-card-logic.js, loaded with this file's version query so an update
 // never pairs this card with a cached old copy.
 
@@ -48,7 +48,7 @@ const TEXT = {
     },
     powerBack: (at, maybe, tomorrow) => {
       const day = tomorrow ? "завтра " : "";
-      return maybe ? `Світло, можливо, повернеться ${day}о ${at}` : `Світло очікується ${day}о ${at}`;
+      return maybe ? `Світло, можливо, повернеться ${day}о ${at}` : `Світло має повернутися ${day}о ${at}`;
     },
     noNext: "Більше відключень не заплановано",
     degraded: "За даними Telegram-каналу: можливі відключення показано як відключення",
@@ -298,7 +298,7 @@ class ChernivtsiOutagesCard extends HTMLElement {
     return { columns: 12, min_columns: 6, rows: 4, min_rows: 3 };
   }
 
-  // The group's Schedule changed at sensor, found by its key on the same device.
+  // The group's Last schedule change sensor, found by its key on the same device.
   _changedId() {
     const entities = this._hass?.entities || {};
     const device = entities[this._config?.entity]?.device_id;
