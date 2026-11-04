@@ -55,7 +55,7 @@ One device per outage group, with these entities:
 | Expected next outage | `sensor.outage_group_12_expected_next_outage` | Start of the next scheduled outage that has not begun yet. Attributes: `end`, `duration_hours`. |
 | Expected power back | `sensor.outage_group_12_expected_power_back` | Scheduled end of the current outage, or of the next one. Attribute `then` says whether `on` or `maybe` follows. |
 | Scheduled outage hours today | `sensor.outage_group_12_scheduled_outage_hours_today` | Scheduled outage hours today. |
-| Possible outage hours today | `sensor.outage_group_12_possible_outage_hours_today` | Possible outage hours today. |
+| Possible outage hours today | `sensor.outage_group_12_possible_outage_hours_today` | Possible outage hours today. Disabled by default. |
 | Schedule changed at | `sensor.outage_group_12_schedule_changed_at` | When the current version of today's schedule was published (diagnostic). Attribute `as_of` is the site's "as of" time, which moves every 30 minutes even without changes. |
 | Scheduled outages | `calendar.outage_group_12_scheduled_outages` | Outages and possible outages, today and tomorrow. |
 | Schedule change | `event.outage_group_12_schedule_change` | Fires when the schedule changes, see below. |

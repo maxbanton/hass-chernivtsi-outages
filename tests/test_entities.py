@@ -35,7 +35,10 @@ async def _real_day(hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFa
 
 
 async def test_states_during_an_outage(
-    hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
+    hass: HomeAssistant,
+    web: FakeWeb,
+    freezer: FrozenDateTimeFactory,
+    entity_registry_enabled_by_default: None,
 ) -> None:
     await _real_day(hass, web, freezer)
     schedule = state(hass, f"{SENSOR}schedule_now")
@@ -102,6 +105,16 @@ async def test_outage_running_into_an_unpublished_day_has_no_end(
     assert nxt.state == "2026-11-03T20:00:00+00:00"
     assert nxt.attributes["end"] is None and nxt.attributes["duration_hours"] is None
     assert state(hass, f"{SENSOR}expected_power_back").state == "unknown"
+
+
+async def test_possible_outage_hours_disabled_by_default(
+    hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
+) -> None:
+    await _real_day(hass, web, freezer)
+    entry = er.async_get(hass).async_get(f"{SENSOR}possible_outage_hours_today")
+    assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert state(hass, f"{SENSOR}possible_outage_hours_today") is None
+    assert state(hass, f"{SENSOR}scheduled_outage_hours_today") is not None
 
 
 async def test_unknown_day_leaves_states_unknown(

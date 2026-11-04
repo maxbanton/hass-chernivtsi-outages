@@ -33,7 +33,9 @@ async def async_setup_entry(
             NextOutageSensor(coordinator, group),
             PowerBackSensor(coordinator, group),
             HoursSensor(coordinator, group, "outage_hours", Slot.OFF),
-            HoursSensor(coordinator, group, "possible_outage_hours", Slot.MAYBE),
+            HoursSensor(
+                coordinator, group, "possible_outage_hours", Slot.MAYBE, enabled=False
+            ),
             ChangedSensor(coordinator, group),
         )
     )
@@ -134,10 +136,17 @@ class HoursSensor(GroupEntity, SensorEntity):
     _attr_suggested_display_precision = 1
 
     def __init__(
-        self, coordinator: OutageCoordinator, group: int, key: str, state: Slot
+        self,
+        coordinator: OutageCoordinator,
+        group: int,
+        key: str,
+        state: Slot,
+        *,
+        enabled: bool = True,
     ) -> None:
         super().__init__(coordinator, group, key)
         self._state = state
+        self._attr_entity_registry_enabled_default = enabled
 
     @property
     def native_value(self) -> float | None:
