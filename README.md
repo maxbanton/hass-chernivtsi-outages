@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/maxbanton/hass-chernivtsi-outages)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.12%2B-41BDF5.svg)](https://www.home-assistant.io)
 
-Scheduled power outages of the Chernivtsi region (Bukovyna, Ukraine) in Home
+Scheduled power outages in the Chernivtsi region (Bukovyna, Ukraine) in Home
 Assistant: the current state of your outage group, the next outage, when power
 comes back, a calendar, events when the schedule changes, and a dashboard card.
 
@@ -27,7 +27,7 @@ Home Assistant you can:
   every time the schedule changes;
 - check that the battery holds enough energy for the coming outage, and shed
   load early if it does not;
-- run the boiler, washer or heating in the hours when power is guaranteed;
+- run the boiler, washer or heating in the hours when power is scheduled;
 - get a notification before an outage and when the schedule changes;
 - compare scheduled outage hours with what actually happened.
 
@@ -50,28 +50,27 @@ One device per outage group, with these entities:
 
 | Entity | Example | Description |
 |---|---|---|
-| Schedule now | `sensor.outage_group_12_schedule_now` | `on`, `off` or `maybe` right now, as scheduled. Attributes `today` and `tomorrow` hold the day's periods. |
+| Schedule now | `sensor.outage_group_12_schedule_now` | `on`, `off` or `maybe` right now, as scheduled. Attributes `today` and `tomorrow` hold each day's periods. |
 | Power by schedule | `binary_sensor.outage_group_12_power_by_schedule` | On while power is scheduled. Off during an outage and during a possible outage. |
-| Expected next outage | `sensor.outage_group_12_expected_next_outage` | Start of the next scheduled outage that has not begun yet. Attributes: `end`, `duration_hours`. |
+| Expected next outage | `sensor.outage_group_12_expected_next_outage` | Start of the next scheduled outage that has not begun yet. Attributes `end` and `duration_hours`. |
 | Expected power back | `sensor.outage_group_12_expected_power_back` | Scheduled end of the current outage, or of the next one. Attribute `then` says whether `on` or `maybe` follows. |
 | Scheduled outage hours today | `sensor.outage_group_12_scheduled_outage_hours_today` | Scheduled outage hours today. |
 | Possible outage hours today | `sensor.outage_group_12_possible_outage_hours_today` | Possible outage hours today. Disabled by default. |
-| Schedule changed at | `sensor.outage_group_12_schedule_changed_at` | When the current version of today's schedule was published (diagnostic). Attribute `as_of` is the site's "as of" time, which moves every 30 minutes even without changes. |
+| Schedule changed at | `sensor.outage_group_12_schedule_changed_at` | When the current version of today's schedule was published (diagnostic). |
 | Scheduled outages | `calendar.outage_group_12_scheduled_outages` | Outages and possible outages, today and tomorrow. |
-| Schedule change | `event.outage_group_12_schedule_change` | Fires when the schedule changes, see below. |
+| Schedule change | `event.outage_group_12_schedule_change` | Fires when the schedule changes (see below). |
 
 All of these describe the published schedule, not the actual state of the grid:
 emergency outages and delays happen. Use your own grid sensor for what really
 happens.
 
-States change exactly at :00 and :30. Times that depend on a day that is not
-published yet are `unknown`: an outage running to midnight has no known end
-until tomorrow's schedule is out.
+States change at :00 and :30. Anything that depends on a schedule not
+published yet is `unknown`, such as the end of an outage that runs past
+midnight.
 
-The hours sensors count each half hour as it was scheduled when it passed, so a
-later revision does not rewrite the past. Their attributes show
-`revisions_today` and `originally_scheduled_hours`, the first version of the
-day.
+The hours sensors keep each half hour as it was scheduled at the time, so a
+later revision does not rewrite the past. Attributes: `revisions_today`,
+`originally_scheduled_hours`.
 
 ### Schedule change events
 
@@ -90,42 +89,24 @@ The event entity fires one of these types, with `date` and a `changes` list
 | `schedule_changed` | anything else changed, such as possible outage hours |
 
 When several things change at once, the most urgent type is reported and the
-`changes` list has all of them. Nothing fires on Home Assistant start, so
-automations that plan around outages should also run at start.
+`changes` list has all of them. Nothing fires when Home Assistant starts, so
+automations that plan around outages should also run at startup.
 
-## Where the data comes from, and how often
+## Where the data comes from
 
-The schedule page on oblenergo.cv.ua is the source of truth. It is not cached,
-and every installation of this integration adds to its load, so the
-integration asks as little as it can:
+The schedule comes from the oblenergo.cv.ua schedule page. The oblenergo
+Telegram channel tells the integration when a new schedule is out, so changes
+show up within minutes while the site is asked only a few times a day.
 
-- The oblenergo Telegram channel is read every 5 minutes. That load is on
-  Telegram, not on oblenergo.
-- The site is fetched only when the channel announces a schedule, plus one
-  safety fetch an hour while outages are on, or every 6 hours when there are
-  none. If the channel cannot be read, the site is checked every 30 minutes.
-- One fetch serves all your groups. Half hour boundaries are computed locally.
-- Errors back off exponentially, and `Retry-After` is respected.
-- Requests carry a User-Agent naming this project, so the site's admins can
-  see who is asking and reach the project.
-
-That is about 4 site requests a day without outages, and about 30 on a day with
-frequent changes.
-
-If the site is down, the hours listed in the channel are used. The channel
-lists only the hours with power, so in that case every other half hour is shown
-as an outage, and the Schedule now sensor has `degraded: true`. Assuming an outage
-is the safer mistake.
-
-When the site shows no schedule at all, there are no outages. Right after a
-day with outages, though, a missing schedule more likely means "not published
-yet", so today stays `unknown` until a schedule or a "no outages" post appears.
+If the site is down, the hours posted in the channel are used. The channel
+lists only the hours with power, so the rest of the day is shown as an outage
+and the Schedule now sensor has `degraded: true`.
 
 ## Installation
 
 ### HACS
 
-1. In HACS, open the menu, choose **Custom repositories**, add
+1. In HACS, open the menu, choose **Custom repositories** and add
    `https://github.com/maxbanton/hass-chernivtsi-outages` as an **Integration**.
 2. Install **Chernivtsi Power Outages** and restart Home Assistant.
 
@@ -151,12 +132,9 @@ type: custom:chernivtsi-outages-card
 entity: sensor.outage_group_12_schedule_now
 ```
 
-It looks like the built in cards: a header, a tile style row with the current
-state and what comes next with a countdown (tap it for the entity's details), and today and
-tomorrow as timelines with a marker at the current time and the length of
-each outage above it. Outages are also
-hatched and possible outages striped, so the card does not rely on colour
-alone. `title` replaces the header text; an empty `title` hides the header.
+It shows the current state with a countdown to what comes next, and today and
+tomorrow as timelines. `title` replaces the header text; an empty `title` hides
+the header.
 
 ## Automation examples
 
@@ -211,8 +189,8 @@ sensor:
 
 ## Troubleshooting
 
-- **Diagnostics:** the integration's menu has **Download diagnostics**, with
-  what each source returned and when the site was last fetched.
+- **Diagnostics:** the integration's menu has **Download diagnostics**. Attach the
+  file when you open an issue.
 - **Repairs:** if the site's or the channel's page layout changes, a repair
   issue appears. Please open an issue in this repository.
 

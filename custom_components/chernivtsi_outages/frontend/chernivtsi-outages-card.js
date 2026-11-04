@@ -33,7 +33,7 @@ const TEXT = {
     missing: "Entity not found",
     hours: (h) => `${h} h`,
     in: (parts) => `in ${parts.map(([n, u]) => `${n} ${u}`).join(" ")}`,
-    changed: (when, at) => ({ today: `Changed ${at}`, yesterday: `Changed yesterday ${at}` })[when] || `Changed ${when} ${at}`,
+    changed: (when, at) => ({ today: `Changed at ${at}`, yesterday: `Changed yesterday at ${at}` })[when] || `Changed ${when} at ${at}`,
   },
   uk: {
     title: (n) => `Група відключень ${n}`,

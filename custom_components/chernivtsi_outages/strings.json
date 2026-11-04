@@ -13,7 +13,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Neither the oblenergo schedule page nor its Telegram channel could be read. Check the internet connection and try again.",
+      "cannot_connect": "Neither the oblenergo schedule page nor its Telegram channel could be read. Check your internet connection and try again.",
       "no_groups": "Pick at least one group."
     },
     "abort": {
@@ -124,11 +124,11 @@
   "issues": {
     "site_layout": {
       "title": "The oblenergo schedule page has changed",
-      "description": "The integration no longer recognizes the schedule page on oblenergo.cv.ua, so the schedule is not updated from it. Meanwhile the oblenergo Telegram channel is used where it lists the hours. Please report this in the project's issues."
+      "description": "The integration no longer recognizes the schedule page on oblenergo.cv.ua, so the schedule is not updated from it. Until this is fixed, the hours listed in the oblenergo Telegram channel are used. Please open an issue in the project repository."
     },
     "telegram_layout": {
       "title": "The oblenergo Telegram channel has changed",
-      "description": "The integration no longer recognizes the oblenergo Telegram channel page. The schedule still comes from oblenergo.cv.ua, but the page is checked every 30 minutes, so changes can show up later. Please report this in the project's issues."
+      "description": "The integration no longer recognizes the oblenergo Telegram channel page. The schedule still comes from oblenergo.cv.ua, but the site is now checked every 30 minutes, so changes may show up later. Please open an issue in the project repository."
     }
   }
 }
