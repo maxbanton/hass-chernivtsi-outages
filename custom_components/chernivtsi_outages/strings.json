@@ -13,7 +13,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Neither the oblenergo schedule page nor its Telegram channel could be read. Check your internet connection and try again.",
+      "cannot_connect": "Could not read the schedule from oblenergo.cv.ua or the oblenergo Telegram channel. Check your internet connection and try again.",
       "no_groups": "Pick at least one group."
     },
     "abort": {
@@ -94,9 +94,9 @@
       "schedule": {
         "name": "Schedule now",
         "state": {
-          "on": "Power on",
+          "on": "Powered",
           "off": "Outage",
-          "maybe": "Possible outage"
+          "maybe": "Possibly powered"
         }
       },
       "next_outage": {
@@ -118,17 +118,17 @@
   },
   "exceptions": {
     "no_source": {
-      "message": "Neither the oblenergo schedule page nor its Telegram channel could be read."
+      "message": "Could not read the schedule from oblenergo.cv.ua or the oblenergo Telegram channel."
     }
   },
   "issues": {
     "site_layout": {
       "title": "The oblenergo schedule page has changed",
-      "description": "The integration no longer recognises the schedule page on oblenergo.cv.ua, so the schedule is not updated from it. Until this is fixed, the hours listed in the oblenergo Telegram channel are used. Please open an issue in the project repository."
+      "description": "The integration no longer recognises the schedule page on oblenergo.cv.ua, so it no longer updates the schedule from there. Until this is fixed, it uses the hours posted in the oblenergo Telegram channel. Please open an issue in the project repository."
     },
     "telegram_layout": {
       "title": "The oblenergo Telegram channel has changed",
-      "description": "The integration no longer recognises the oblenergo Telegram channel page. The schedule still comes from oblenergo.cv.ua, but the site is now checked every 30 minutes, so changes may show up later. Please open an issue in the project repository."
+      "description": "The integration no longer recognises the oblenergo Telegram channel page. The schedule still comes from oblenergo.cv.ua, but the site is now checked every 30 minutes, so changes can take longer to show up. Please open an issue in the project repository."
     }
   }
 }

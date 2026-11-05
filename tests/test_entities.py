@@ -149,7 +149,7 @@ async def test_calendar(hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTi
     events = result["calendar.outage_group_12_scheduled_outages"]["events"]
     assert [(e["summary"], e["start"][11:16], e["end"][11:16]) for e in events] == [
         ("Outage", "17:30", "19:30"),
-        ("Possible outage", "19:30", "20:00"),
+        ("Possibly powered", "19:30", "20:00"),
     ]
 
 
@@ -161,7 +161,7 @@ async def test_calendar_titles_follow_the_server_language(
     entity_id = er.async_get(hass).async_get_entity_id(
         "calendar", DOMAIN, f"{entry.entry_id}_12_outages"
     )
-    assert state(hass, entity_id).attributes["message"] == "Відключення"
+    assert state(hass, entity_id).attributes["message"] == "Відключено"
 
 
 async def test_changing_groups_adds_and_removes_devices(

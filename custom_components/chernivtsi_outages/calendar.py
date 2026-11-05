@@ -27,7 +27,7 @@ async def async_setup_entry(
 class OutageCalendar(GroupEntity, CalendarEntity):
     def __init__(self, coordinator: OutageCoordinator, group: int) -> None:
         super().__init__(coordinator, group, "outages")
-        self._names: dict[Slot, str] = {Slot.OFF: "Outage", Slot.MAYBE: "Possible outage"}
+        self._names: dict[Slot, str] = {Slot.OFF: "Outage", Slot.MAYBE: "Possibly powered"}
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()

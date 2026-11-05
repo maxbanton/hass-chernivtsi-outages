@@ -14,7 +14,7 @@ const TEXT = {
     today: "Today",
     tomorrow: "Tomorrow",
     notPublished: "Not published yet",
-    unknown: "Today's schedule is not published yet",
+    unknown: "Today's schedule hasn't been published yet",
     noOutages: "No outages scheduled",
     nextOutage: (from, to, tomorrow) => {
       const day = tomorrow ? "tomorrow " : "";
@@ -25,10 +25,10 @@ const TEXT = {
       return maybe ? `Power possibly back ${day}at ${at}` : `Power expected back ${day}at ${at}`;
     },
     noNext: "No more outages scheduled",
-    degraded: "From the Telegram channel: possible outages are shown as outages",
-    on: "Power on",
+    degraded: "From the Telegram channel: possibly powered hours are shown as outages",
+    on: "Powered",
     off: "Outage",
-    maybe: "Possible outage",
+    maybe: "Possibly powered",
     entity: "Schedule now sensor",
     missing: "Entity not found",
     hours: (h) => `${h} h`,
@@ -51,10 +51,10 @@ const TEXT = {
       return maybe ? `Світло, можливо, повернеться ${day}о ${at}` : `Світло має повернутися ${day}о ${at}`;
     },
     noNext: "Більше відключень не заплановано",
-    degraded: "За даними Telegram-каналу: можливі відключення показано як відключення",
-    on: "Є світло",
-    off: "Відключення",
-    maybe: "Можливе відключення",
+    degraded: "За даними Telegram-каналу: години «можливо заживлено» показано як відключення",
+    on: "Заживлено",
+    off: "Відключено",
+    maybe: "Можливо заживлено",
     entity: "Сенсор «Графік зараз»",
     missing: "Сутність не знайдено",
     hours: (h) => `${h} год`,
