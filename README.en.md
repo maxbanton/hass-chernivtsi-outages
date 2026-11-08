@@ -16,6 +16,7 @@ comes back, a calendar, events when the schedule changes, and a dashboard card.
 > [oblenergo.cv.ua](https://oblenergo.cv.ua/shutdowns/) and their
 > [Telegram channel](https://t.me/oe_cv_ua). Emergency outages can also happen
 > outside the schedule.
+> Use it at your own risk. See the [disclaimer](#disclaimer).
 
 ## What it's for
 
@@ -190,6 +191,28 @@ automation:
 Delete the integration under **Settings** > **Devices & services**. The card's
 resource and the stored schedule are removed with it. Then remove it
 from HACS, or delete the files if you installed it manually.
+
+## Disclaimer
+
+This software is provided ‘as is’, without warranty of any kind, express or
+implied. See [LICENSE](LICENSE).
+
+- It is not affiliated with, endorsed by or supported by JSC
+  Chernivtsioblenergo.
+- The schedule it shows may be late, incomplete or wrong: the oblenergo site or
+  the Telegram channel can change or be unavailable, and the schedule can change
+  after the integration has read it. Only the schedule Chernivtsioblenergo
+  publishes is authoritative, and outages can happen outside it.
+- Do not rely on it for safety-critical decisions. A line the schedule shows as
+  off can be energised at any time. Never use it to decide whether electrical
+  work is safe.
+- Automations built on it (switching loads, generators, chargers or other
+  equipment) are your responsibility. Check what they do when the schedule is
+  wrong or missing.
+- You use it entirely at your own risk. The author and contributors are not
+  liable for any damage to equipment or property, personal injury, data loss,
+  financial loss or any other direct or indirect consequence of installing or
+  using it.
 
 ## License
 
