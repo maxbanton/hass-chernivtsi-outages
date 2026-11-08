@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -14,7 +15,11 @@ from homeassistant.components.lovelace.resources import (
 from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
-from custom_components.chernivtsi_outages.card import CARD_URL, FRONTEND_PATH
+from custom_components.chernivtsi_outages.card import (
+    CARD_URL,
+    FRONTEND_PATH,
+    async_add_card_resource,
+)
 from custom_components.chernivtsi_outages.const import DOMAIN, SITE_URL
 
 from .common import kyiv, setup
@@ -41,7 +46,27 @@ def resources(hass: HomeAssistant, request) -> ResourceStorageCollection:
 
 
 async def _card_url(hass: HomeAssistant) -> str:
-    return f"{CARD_URL}?v={(await async_get_integration(hass, DOMAIN)).version}"
+    digest = hashlib.sha256()
+    for name in ("chernivtsi-outages-card.js", "outages-card-logic.js"):
+        digest.update((FRONTEND_PATH / name).read_bytes())
+    version = (await async_get_integration(hass, DOMAIN)).version
+    return f"{CARD_URL}?v={version}-{digest.hexdigest()[:8]}"
+
+
+async def test_card_url_changes_with_the_card_files(
+    hass: HomeAssistant, resources, tmp_path
+) -> None:
+    for name in ("chernivtsi-outages-card.js", "outages-card-logic.js"):
+        (tmp_path / name).write_bytes((FRONTEND_PATH / name).read_bytes())
+    with patch("custom_components.chernivtsi_outages.card.FRONTEND_PATH", tmp_path):
+        await setup(hass)
+        before = _urls(resources)
+        (tmp_path / "outages-card-logic.js").write_text("// changed\n")
+        await async_add_card_resource(hass)
+    after = _urls(resources)
+    assert len(before) == len(after) == 1
+    assert before != after
+    assert after[0].startswith(f"{CARD_URL}?v=")
 
 
 def _urls(resources: ResourceStorageCollection) -> list[str]:

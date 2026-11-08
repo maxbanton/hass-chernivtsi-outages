@@ -1,6 +1,7 @@
 """Serve the schedule card and load it on the dashboards."""
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 from homeassistant.components.frontend import add_extra_js_url
@@ -52,9 +53,22 @@ async def async_serve_card(hass: HomeAssistant) -> None:
         await async_add_card_resource(hass)
 
 
+def _frontend_hash() -> str:
+    digest = hashlib.sha256()
+    for path in sorted(FRONTEND_PATH.glob("*.js")):
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:8]
+
+
 async def _versioned_url(hass: HomeAssistant) -> str:
-    """The card URL with the version that busts browser caches on updates."""
-    return f"{CARD_URL}?v={(await async_get_integration(hass, DOMAIN)).version}"
+    """The card URL that busts browser caches on updates.
+
+    The version alone is not enough: a browser that cached the card under a
+    version keeps it, so any change to the files must change the URL as well.
+    """
+    version = (await async_get_integration(hass, DOMAIN)).version
+    digest = await hass.async_add_executor_job(_frontend_hash)
+    return f"{CARD_URL}?v={version}-{digest}"
 
 
 async def async_add_card_resource(hass: HomeAssistant) -> None:
