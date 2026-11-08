@@ -1,4 +1,4 @@
-"""Calendar of scheduled and possible outages."""
+"""Calendar of scheduled outages and possibly powered hours."""
 from __future__ import annotations
 
 from datetime import datetime

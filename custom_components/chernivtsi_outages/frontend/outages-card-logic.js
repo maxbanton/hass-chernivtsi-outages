@@ -52,7 +52,7 @@ export function mergeDays(today, tomorrow) {
 // The line under the current state. `kind` is one of:
 //   unknown   today's schedule is not published
 //   quiet     no outages today, and none published for tomorrow
-//   back      in an outage that ends at `at` (`maybe` when a possible outage follows)
+//   back      in an outage that ends at `at` (`maybe` when possibly powered hours follow)
 //   off       in an outage whose end is not published yet
 //   next      the next outage starts at `at`, ending at `to` when that is known
 //   none      no more outages in what is published

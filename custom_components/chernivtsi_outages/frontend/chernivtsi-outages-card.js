@@ -14,7 +14,7 @@ const TEXT = {
     today: "Today",
     tomorrow: "Tomorrow",
     notPublished: "Not published yet",
-    unknown: "Today's schedule hasn't been published yet",
+    unknown: "Today's schedule has not been published yet",
     noOutages: "No outages scheduled",
     nextOutage: (from, to, tomorrow) => {
       const day = tomorrow ? "tomorrow " : "";
@@ -25,7 +25,7 @@ const TEXT = {
       return maybe ? `Power possibly back ${day}at ${at}` : `Power expected back ${day}at ${at}`;
     },
     noNext: "No more outages scheduled",
-    degraded: "From the Telegram channel: possibly powered hours are shown as outages",
+    degraded: "Data from the Telegram channel: possibly powered hours are shown as outages",
     on: "Powered",
     off: "Outage",
     maybe: "Possibly powered",
@@ -51,7 +51,7 @@ const TEXT = {
       return maybe ? `Світло, можливо, повернеться ${day}о ${at}` : `Світло має повернутися ${day}о ${at}`;
     },
     noNext: "Більше відключень не заплановано",
-    degraded: "За даними Telegram-каналу: години «можливо заживлено» показано як відключення",
+    degraded: "Дані з Telegram-каналу: години «можливо заживлено» показано як відключення",
     on: "Заживлено",
     off: "Відключено",
     maybe: "Можливо заживлено",
@@ -525,7 +525,7 @@ if (!customElements.get("chernivtsi-outages-card")) {
   window.customCards.push({
     type: "chernivtsi-outages-card",
     name: "Chernivtsi Power Outages",
-    description: "Today's and tomorrow's outage schedule of one group",
+    description: "Today's and tomorrow's outage schedule for one group",
     preview: true,
   });
 }

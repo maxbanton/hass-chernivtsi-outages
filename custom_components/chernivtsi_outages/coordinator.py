@@ -384,7 +384,7 @@ class OutageCoordinator(DataUpdateCoordinator[dict[date, DaySchedule]]):
                     self._fire(group, "schedule_published", {"date": new.day.isoformat()})
                 continue
             if old.degraded and _powered(old.groups[group]) == _powered(slots):
-                # The site's detail replacing the channel's on/off only version.
+                # The site's detail replacing the channel's on/off-only version.
                 continue
             change = diff(new.day, old.groups[group], slots, now)
             if change.changed:

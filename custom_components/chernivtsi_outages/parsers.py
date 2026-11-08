@@ -79,7 +79,7 @@ class Post:
     day: date
     # False: "Електропостачання без обмежень для всіх груп".
     outages: bool
-    # Per group slots, None when the schedule was posted as a picture.
+    # Per-group slots, None when the schedule was posted as a picture.
     groups: dict[int, Slots] | None
 
     def schedule(self) -> DaySchedule | None:

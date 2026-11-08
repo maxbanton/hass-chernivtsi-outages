@@ -41,7 +41,7 @@ describe("nextEvent", () => {
       kind: "next", at: "08:00", to: "10:30", tomorrow: true, in: 540,
     });
   });
-  test("power back after midnight says tomorrow, and whether a possible outage follows", () => {
+  test("power back after midnight says tomorrow, and whether possibly powered hours follow", () => {
     assert.deepEqual(nextEvent(schedule("o".repeat(48), "oooooo" + "s" + "u".repeat(41)), at(23)), {
       kind: "back", at: "03:00", maybe: true, tomorrow: true, in: 240,
     });

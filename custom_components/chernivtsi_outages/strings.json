@@ -17,7 +17,7 @@
       "no_groups": "Pick at least one group."
     },
     "abort": {
-      "single_instance_allowed": "Already set up. To change the groups, select Configure on the integration."
+      "single_instance_allowed": "Already set up. To change the groups, select Configure on the integration's page."
     }
   },
   "options": {
@@ -109,7 +109,7 @@
         "name": "Scheduled outage hours today"
       },
       "possible_outage_hours": {
-        "name": "Possible outage hours today"
+        "name": "Possibly powered hours today"
       },
       "changed": {
         "name": "Last schedule change"
@@ -124,7 +124,7 @@
   "issues": {
     "site_layout": {
       "title": "The oblenergo schedule page has changed",
-      "description": "The integration no longer recognises the schedule page on oblenergo.cv.ua, so it no longer updates the schedule from there. Until this is fixed, it uses the hours posted in the oblenergo Telegram channel. Please open an issue in the project repository."
+      "description": "The integration no longer recognises the schedule page on oblenergo.cv.ua and has stopped reading the schedule from it. Until this is fixed, it uses the hours posted in the oblenergo Telegram channel. Please open an issue in the project repository."
     },
     "telegram_layout": {
       "title": "The oblenergo Telegram channel has changed",

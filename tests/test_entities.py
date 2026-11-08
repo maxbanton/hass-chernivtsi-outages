@@ -55,7 +55,7 @@ async def test_states_during_an_outage(
     assert back.state == "2026-11-03T17:30:00+00:00"
     assert back.attributes["then"] == "maybe"
     assert state(hass, f"{SENSOR}scheduled_outage_hours_today").state == "2.0"
-    assert state(hass, f"{SENSOR}possible_outage_hours_today").state == "0.5"
+    assert state(hass, f"{SENSOR}possibly_powered_hours_today").state == "0.5"
     # Published by post 3950 at 18:33; the site re-stamps it every 30 minutes.
     changed = state(hass, f"{SENSOR}last_schedule_change")
     assert changed.state == "2026-11-03T16:33:52+00:00"
@@ -111,9 +111,9 @@ async def test_possible_outage_hours_disabled_by_default(
     hass: HomeAssistant, web: FakeWeb, freezer: FrozenDateTimeFactory
 ) -> None:
     await _real_day(hass, web, freezer)
-    entry = er.async_get(hass).async_get(f"{SENSOR}possible_outage_hours_today")
+    entry = er.async_get(hass).async_get(f"{SENSOR}possibly_powered_hours_today")
     assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
-    assert state(hass, f"{SENSOR}possible_outage_hours_today") is None
+    assert state(hass, f"{SENSOR}possibly_powered_hours_today") is None
     assert state(hass, f"{SENSOR}scheduled_outage_hours_today") is not None
 
 

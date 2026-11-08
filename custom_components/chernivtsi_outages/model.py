@@ -172,7 +172,7 @@ def _iso(moment: datetime | None) -> str | None:
 @dataclass
 class Diff:
     changes: list[Change] = field(default_factory=list)
-    # Any slot from `after` on differs, also when no outage moved.
+    # Any slot from `after` on differs, even when no outage moved.
     changed: bool = False
 
     @property

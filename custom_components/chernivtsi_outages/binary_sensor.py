@@ -21,7 +21,7 @@ async def async_setup_entry(
 
 
 class PowerBinarySensor(GroupEntity, BinarySensorEntity):
-    """On only while power is scheduled; a possible outage is not power."""
+    """On only while power is scheduled; possibly powered hours count as off."""
 
     def __init__(self, coordinator: OutageCoordinator, group: int) -> None:
         super().__init__(coordinator, group, "power")
