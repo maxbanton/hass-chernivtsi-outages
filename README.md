@@ -11,6 +11,8 @@
 
 [English](README.en.md)
 
+![Картка графіка](https://raw.githubusercontent.com/maxbanton/hass-chernivtsi-outages/main/docs/card-uk.png)
+
 > **Неофіційна інтеграція.** Проєкт не пов’язаний з АТ «Чернівціобленерго» і
 > не схвалений ним. Інтеграція читає графік, який обленерго публікує на
 > [oblenergo.cv.ua](https://oblenergo.cv.ua/shutdowns/) і в

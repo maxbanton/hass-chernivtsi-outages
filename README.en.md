@@ -11,6 +11,8 @@ comes back, a calendar, events when the schedule changes, and a dashboard card.
 
 [Українською](README.md)
 
+![Schedule card](https://raw.githubusercontent.com/maxbanton/hass-chernivtsi-outages/main/docs/card-en.png)
+
 > **Unofficial.** This project is not affiliated with or endorsed by
 > JSC Chernivtsioblenergo. It reads the schedule they publish on
 > [oblenergo.cv.ua](https://oblenergo.cv.ua/shutdowns/) and their
