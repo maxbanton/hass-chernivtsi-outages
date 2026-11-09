@@ -88,6 +88,8 @@ def test_real_channel_page() -> None:
         assert [s is Slot.ON for s in last.groups[group]] == [
             s is Slot.ON for s in site.groups[group]
         ]
+    quiet = next(p for p in posts if p.id == 3939)
+    assert (quiet.day, quiet.outages) == (date(2026, 10, 18), False)
     # Posted on 17.10 but dated 01.10: kept by the parser, rejected by the coordinator.
     assert any(p.day == date(2026, 10, 1) for p in posts)
 
@@ -102,13 +104,15 @@ def test_channel_formats() -> None:
             (11, posted, quiet_text(tomorrow)),
             (12, posted, schedule_text(tomorrow, rows)),
             (13, posted, "Шановні абоненти! Передайте показники."),
+            (14, posted, f"На {tomorrow:%d.%m.%Y} електропостачання без обмежень"),
         ]
     )
-    image, quiet, text = parse_telegram(page)
+    image, quiet, text, inline = parse_telegram(page)
     assert (image.id, image.day, image.outages, image.groups) == (10, tomorrow, True, None)
     assert image.schedule() is None
     assert (quiet.outages, quiet.groups) == (False, None)
     assert quiet.schedule().active is False
+    assert (inline.day, inline.outages) == (tomorrow, False)
     assert encode(text.groups[1]) == codes(off=(16, 20))
     assert encode(text.groups[2]) == codes(off=(40, 48))
     assert encode(text.groups[3]) == "o" * 48

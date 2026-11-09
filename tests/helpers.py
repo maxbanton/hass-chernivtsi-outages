@@ -80,7 +80,7 @@ def image_text(day: date) -> str:
 
 
 def quiet_text(day: date) -> str:
-    return f"✨ На {day:%d.%m.%Y} Електропостачання без обмежень для всіх груп споживачів!"
+    return f"✨ На {day:%d.%m.%Y}\nЕлектропостачання без обмежень для всіх груп споживачів!"
 
 
 def telegram_page(posts: list[tuple[int, datetime, str]]) -> str:

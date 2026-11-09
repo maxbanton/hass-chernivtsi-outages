@@ -98,7 +98,8 @@ _MESSAGE = re.compile(r'data-post="[^"/]+/(\d+)"(.*?)(?=data-post="|\Z)', re.S)
 _POSTED = re.compile(r'<time[^>]*datetime="([^"]+)"')
 _TEXT = re.compile(r'class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', re.S)
 _HEADER = re.compile(r"графік\s+заживлення[^\n]*?(\d{2})\.(\d{2})\.(\d{4})", re.I)
-_NO_OUTAGES = re.compile(r"На\s+(\d{2})\.(\d{2})\.(\d{4})[^\n]*?без\s+обмежень", re.I)
+# The date and the text are on one line or on two.
+_NO_OUTAGES = re.compile(r"На\s+(\d{2})\.(\d{2})\.(\d{4})[^\n]*?(?:\n[^\n]*?)?без\s+обмежень", re.I)
 # A group with no powered hours would have no lines, so blank lines end a block
 # and are never part of the heading.
 _GROUP = re.compile(r"Група[ \t]*(\d{1,2})[ \t]*\n(.*?)(?=\n[ \t]*\n|💡|Група[ \t]*\d|\Z)", re.S)
