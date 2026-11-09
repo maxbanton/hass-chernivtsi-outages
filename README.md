@@ -53,15 +53,15 @@ Home Assistant, можна:
 
 | Сутність | Приклад | Опис |
 |---|---|---|
-| Графік зараз | `sensor.outage_group_12_schedule_now` | Стан за графіком зараз: `on`, `off` або `maybe`. Атрибути `today` і `tomorrow` містять періоди графіка на сьогодні й завтра. |
-| Світло за графіком | `binary_sensor.outage_group_12_scheduled_power` | Увімкнено, коли за графіком є світло. Вимкнено під час відключень і в години «можливо заживлено». |
-| Очікуване наступне відключення | `sensor.outage_group_12_expected_next_outage` | Початок наступного відключення за графіком, яке ще не настало. Атрибути `end` і `duration_hours`. |
-| Очікуване повернення світла | `sensor.outage_group_12_power_expected_back` | Кінець поточного або наступного відключення за графіком. Атрибут `then` показує, що буде далі: `on` чи `maybe`. |
-| Години відключень за графіком сьогодні | `sensor.outage_group_12_scheduled_outage_hours_today` | Години відключень за графіком сьогодні. |
-| Години «можливо заживлено» сьогодні | `sensor.outage_group_12_possibly_powered_hours_today` | Години «можливо заживлено» сьогодні. Вимкнено за замовчуванням. |
-| Остання зміна графіка | `sensor.outage_group_12_last_schedule_change` | Коли опубліковано поточну версію графіка на сьогодні (діагностична сутність). |
-| Відключення за графіком | `calendar.outage_group_12_scheduled_outages` | Календар: відключення і години «можливо заживлено» на сьогодні й завтра. |
-| Зміна графіка | `event.outage_group_12_schedule_change` | Спрацьовує, коли змінюється графік (див. нижче). |
+| Графік зараз | `sensor.outage_group_5_schedule_now` | Стан за графіком зараз: `on`, `off` або `maybe`. Атрибути `today` і `tomorrow` містять періоди графіка на сьогодні й завтра. |
+| Світло за графіком | `binary_sensor.outage_group_5_scheduled_power` | Увімкнено, коли за графіком є світло. Вимкнено під час відключень і в години «можливо заживлено». |
+| Очікуване наступне відключення | `sensor.outage_group_5_expected_next_outage` | Початок наступного відключення за графіком, яке ще не настало. Атрибути `end` і `duration_hours`. |
+| Очікуване повернення світла | `sensor.outage_group_5_power_expected_back` | Кінець поточного або наступного відключення за графіком. Атрибут `then` показує, що буде далі: `on` чи `maybe`. |
+| Години відключень за графіком сьогодні | `sensor.outage_group_5_scheduled_outage_hours_today` | Години відключень за графіком сьогодні. |
+| Години «можливо заживлено» сьогодні | `sensor.outage_group_5_possibly_powered_hours_today` | Години «можливо заживлено» сьогодні. Вимкнено за замовчуванням. |
+| Остання зміна графіка | `sensor.outage_group_5_last_schedule_change` | Коли опубліковано поточну версію графіка на сьогодні (діагностична сутність). |
+| Відключення за графіком | `calendar.outage_group_5_scheduled_outages` | Календар: відключення і години «можливо заживлено» на сьогодні й завтра. |
+| Зміна графіка | `event.outage_group_5_schedule_change` | Спрацьовує, коли змінюється графік (див. нижче). |
 
 Ідентифікатори в прикладах відповідають англомовному Home Assistant.
 
@@ -137,7 +137,7 @@ Power Outages** і виберіть одну або кілька груп. Св�
 
 ```yaml
 type: custom:chernivtsi-outages-card
-entity: sensor.outage_group_12_schedule_now
+entity: sensor.outage_group_5_schedule_now
 ```
 
 Картка показує поточний стан, скільки лишилося до наступної зміни, і шкалу на
@@ -154,13 +154,13 @@ automation:
     triggers:
       - trigger: time
         at:
-          entity_id: sensor.outage_group_12_expected_next_outage
+          entity_id: sensor.outage_group_5_expected_next_outage
           offset: "-00:30:00"
     actions:
       - action: notify.notify
         data:
           message: >-
-            Відключення о {{ as_timestamp(states('sensor.outage_group_12_expected_next_outage'))
+            Відключення о {{ as_timestamp(states('sensor.outage_group_5_expected_next_outage'))
             | timestamp_custom('%H:%M') }}
 ```
 
@@ -171,7 +171,7 @@ automation:
   - alias: Відключення перенесли раніше або додали
     triggers:
       - trigger: state
-        entity_id: event.outage_group_12_schedule_change
+        entity_id: event.outage_group_5_schedule_change
     conditions:
       - condition: template
         value_template: "{{ trigger.to_state.attributes.event_type in ['outage_earlier', 'outage_added'] }}"

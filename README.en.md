@@ -53,15 +53,15 @@ Each group gets a device with these entities:
 
 | Entity | Example | Description |
 |---|---|---|
-| Schedule now | `sensor.outage_group_12_schedule_now` | `on`, `off` or `maybe` right now, as scheduled. The `today` and `tomorrow` attributes hold each day's periods. |
-| Scheduled power | `binary_sensor.outage_group_12_scheduled_power` | On while power is scheduled to be on. Off during outages and possibly powered hours. |
-| Expected next outage | `sensor.outage_group_12_expected_next_outage` | Start of the next scheduled outage that has not begun yet. Also has the `end` and `duration_hours` attributes. |
-| Power expected back | `sensor.outage_group_12_power_expected_back` | Scheduled end of the current outage, or of the next one. The `then` attribute says whether `on` or `maybe` follows. |
-| Scheduled outage hours today | `sensor.outage_group_12_scheduled_outage_hours_today` | Scheduled outage hours today. |
-| Possibly powered hours today | `sensor.outage_group_12_possibly_powered_hours_today` | Possibly powered hours today. Disabled by default. |
-| Last schedule change | `sensor.outage_group_12_last_schedule_change` | When the current version of today's schedule was published (diagnostic). |
-| Scheduled outages | `calendar.outage_group_12_scheduled_outages` | Calendar: outages and possibly powered hours, today and tomorrow. |
-| Schedule change | `event.outage_group_12_schedule_change` | Receives an event when the schedule changes (see below). |
+| Schedule now | `sensor.outage_group_5_schedule_now` | `on`, `off` or `maybe` right now, as scheduled. The `today` and `tomorrow` attributes hold each day's periods. |
+| Scheduled power | `binary_sensor.outage_group_5_scheduled_power` | On while power is scheduled to be on. Off during outages and possibly powered hours. |
+| Expected next outage | `sensor.outage_group_5_expected_next_outage` | Start of the next scheduled outage that has not begun yet. Also has the `end` and `duration_hours` attributes. |
+| Power expected back | `sensor.outage_group_5_power_expected_back` | Scheduled end of the current outage, or of the next one. The `then` attribute says whether `on` or `maybe` follows. |
+| Scheduled outage hours today | `sensor.outage_group_5_scheduled_outage_hours_today` | Scheduled outage hours today. |
+| Possibly powered hours today | `sensor.outage_group_5_possibly_powered_hours_today` | Possibly powered hours today. Disabled by default. |
+| Last schedule change | `sensor.outage_group_5_last_schedule_change` | When the current version of today's schedule was published (diagnostic). |
+| Scheduled outages | `calendar.outage_group_5_scheduled_outages` | Calendar: outages and possibly powered hours, today and tomorrow. |
+| Schedule change | `event.outage_group_5_schedule_change` | Receives an event when the schedule changes (see below). |
 
 The example IDs assume Home Assistant is set to English.
 
@@ -136,7 +136,7 @@ install. When editing a dashboard, add it like any other card (search for
 
 ```yaml
 type: custom:chernivtsi-outages-card
-entity: sensor.outage_group_12_schedule_now
+entity: sensor.outage_group_5_schedule_now
 ```
 
 It shows the current state with a countdown to the next change, plus timelines
@@ -153,13 +153,13 @@ automation:
     triggers:
       - trigger: time
         at:
-          entity_id: sensor.outage_group_12_expected_next_outage
+          entity_id: sensor.outage_group_5_expected_next_outage
           offset: "-00:30:00"
     actions:
       - action: notify.notify
         data:
           message: >-
-            Outage at {{ as_timestamp(states('sensor.outage_group_12_expected_next_outage'))
+            Outage at {{ as_timestamp(states('sensor.outage_group_5_expected_next_outage'))
             | timestamp_custom('%H:%M') }}
 ```
 
@@ -170,7 +170,7 @@ automation:
   - alias: Outage earlier or added
     triggers:
       - trigger: state
-        entity_id: event.outage_group_12_schedule_change
+        entity_id: event.outage_group_5_schedule_change
     conditions:
       - condition: template
         value_template: "{{ trigger.to_state.attributes.event_type in ['outage_earlier', 'outage_added'] }}"
