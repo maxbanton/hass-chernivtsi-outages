@@ -85,25 +85,16 @@ export function countdown(minutesLeft) {
   return m ? [[h, "h"], [m, "min"]] : [[h, "h"]];
 }
 
-// Minutes of outage touching midnight: at the start of `periods` when `first`, else at the end.
-export function overnight(periods, first) {
-  if (!Array.isArray(periods) || !periods.length) return 0;
-  const p = first ? periods[0] : periods[periods.length - 1];
-  if (p.state !== "off" || (first ? p.start !== "00:00" : p.end !== "24:00")) return 0;
-  return minutes(p.end) - minutes(p.start);
-}
-
-// One mark per outage of a day: where its middle is (0 to 1), its full length in
-// hours, counting the part on the other side of midnight (`carry`), and whether it
-// has ended by `now` (null for a day that is not today).
-export function outageMarks(periods, now, carry = { before: 0, after: 0 }) {
+// One mark per outage of a day: where its middle is (0 to 1), its length in hours,
+// and whether it has ended by `now` (null for a day that is not today). An outage
+// across midnight gets a mark on each day, each with that day's part.
+export function outageMarks(periods, now) {
   return (periods || [])
     .filter((p) => p.state === "off")
     .map((p) => {
       const start = minutes(p.start);
       const end = minutes(p.end);
-      const extra = (start === 0 ? carry.before : 0) + (end === DAY ? carry.after : 0);
-      return { mid: (start + end) / 2 / DAY, hours: (end - start + extra) / 60, end, done: now !== null && end <= now };
+      return { mid: (start + end) / 2 / DAY, hours: (end - start) / 60, end, done: now !== null && end <= now };
     });
 }
 

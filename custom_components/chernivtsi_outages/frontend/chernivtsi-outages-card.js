@@ -4,7 +4,7 @@
 // live in outages-card-logic.js, loaded with this file's version query so an update
 // never pairs this card with a cached old copy.
 
-const { changedWhen, countdown, formatClock, kyivMinutes, minutes, nextEvent, outageMarks, overnight } = await import(
+const { changedWhen, countdown, formatClock, kyivMinutes, minutes, nextEvent, outageMarks } = await import(
   `./outages-card-logic.js${new URL(import.meta.url).search}`
 );
 
@@ -338,9 +338,8 @@ class ChernivtsiOutagesCard extends HTMLElement {
     return bar;
   }
 
-  // `carry` is the length of the same outage on the other side of midnight, so both halves show its full length.
-  _marks(periods, now, t, carry) {
-    const marks = outageMarks(periods, now, carry);
+  _marks(periods, now, t) {
+    const marks = outageMarks(periods, now);
     if (!marks.length) return null;
     const spans = marks.map((m) =>
       el("span", {
@@ -355,12 +354,12 @@ class ChernivtsiOutagesCard extends HTMLElement {
     return el("div", { class: "marks" }, spans);
   }
 
-  _day(label, periods, now, t, missing, carry = { before: 0, after: 0 }) {
+  _day(label, periods, now, t, missing) {
     const known = Array.isArray(periods);
     const body = known ? this._bar(periods, now, t) : el("div", { class: "empty", text: missing });
     return el("div", { class: "day", role: "group", "aria-label": label }, [
       el("div", { class: "label", text: label }),
-      known ? this._marks(periods, now, t, carry) : null,
+      known ? this._marks(periods, now, t) : null,
       body,
     ]);
   }
@@ -463,8 +462,8 @@ class ChernivtsiOutagesCard extends HTMLElement {
       ...(title ? [el("h1", { class: "card-header", text: title })] : []),
       tile,
       el("div", { class: "timeline" }, [
-        this._day(t.today, a.today, now, t, t.unknown, { before: 0, after: overnight(a.tomorrow, true) }),
-        this._day(t.tomorrow, a.tomorrow, null, t, t.notPublished, { before: overnight(a.today, false), after: 0 }),
+        this._day(t.today, a.today, now, t, t.unknown),
+        this._day(t.tomorrow, a.tomorrow, null, t, t.notPublished),
         ticks,
       ]),
       legend,

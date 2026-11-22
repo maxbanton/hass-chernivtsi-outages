@@ -11,7 +11,6 @@ import {
   mergeDays,
   nextEvent,
   outageMarks,
-  overnight,
 } from "../../custom_components/chernivtsi_outages/frontend/outages-card-logic.js";
 
 // A day from 48 half hour codes, as the site writes them: u on, o off, s maybe.
@@ -93,17 +92,9 @@ describe("mergeDays", () => {
 });
 
 describe("outage lengths", () => {
-  test("an outage touching midnight counts the other day's part", () => {
-    const today = day("u".repeat(46) + "oo");
-    const tomorrow = day("oo" + "u".repeat(46));
-    assert.equal(overnight(tomorrow, true), 60);
-    assert.equal(overnight(today, false), 60);
-    assert.deepEqual(outageMarks(today, null, { before: 0, after: overnight(tomorrow, true) }).map((m) => m.hours), [2]);
-    assert.deepEqual(outageMarks(tomorrow, null, { before: overnight(today, false), after: 0 }).map((m) => m.hours), [2]);
-  });
-  test("nothing carries when the day does not start or end with an outage", () => {
-    assert.equal(overnight(day(ON), true), 0);
-    assert.equal(overnight(null, true), 0);
+  test("an outage across midnight is marked on each day with that day's part", () => {
+    assert.deepEqual(outageMarks(day("u".repeat(46) + "oo"), null).map((m) => m.hours), [1]);
+    assert.deepEqual(outageMarks(day("oo" + "u".repeat(46)), null).map((m) => m.hours), [1]);
   });
   test("each mark sits at its outage's middle and knows whether it has ended", () => {
     const marks = outageMarks(day("u".repeat(35) + "oooo" + "s" + "u".repeat(8)), at(20));
