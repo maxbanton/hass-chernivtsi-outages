@@ -103,9 +103,12 @@ The schedule comes from the outage schedule page on oblenergo.cv.ua. Posts in th
 oblenergo Telegram channel tell the integration when a new schedule is out, so
 changes show up within minutes.
 
-If the site is down, the integration uses the hours posted in the channel. The
-channel lists only the hours with power, so the rest of the day is shown as an
-outage and the Schedule now sensor gets the attribute `degraded: true`.
+If the site is down, the integration uses the hours posted in the channel. This
+works only when the schedule is posted as text, not as a picture. The channel
+lists only the hours with power, so the rest of the day is shown as an outage and
+the Schedule now sensor gets the attribute `degraded: true`. When the schedule is
+posted as a picture, the integration keeps the last schedule from the site, and
+the schedule for a new day stays unknown until the site is back.
 
 ## Installation
 
